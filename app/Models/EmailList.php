@@ -37,4 +37,9 @@ class EmailList extends Model
     {
         return $this->hasMany(Campaign::class);
     }
+
+    public function emailRecipients(): HasMany
+    {
+        return $this->hasMany(EmailRecipient::class);
+    }
 }

@@ -16,9 +16,22 @@ Route::view('profile', 'profile')
     ->name('profile');
 
 // Email tracking route (for pixel tracking)
-Route::get('/track/{token}', function ($token) {
-    // This will be handled by a controller for tracking email opens
-    return response('')->header('Content-Type', 'image/gif');
-})->name('email.track');
+Route::get('/track/{token}', [App\Http\Controllers\EmailTrackingController::class, 'trackOpen'])
+    ->name('email.track');
+
+// Module pages routes
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/file-upload', [App\Http\Controllers\FileUploadController::class, 'index'])
+        ->name('file-upload');
+    
+    Route::get('/email-templates', [App\Http\Controllers\EmailTemplateController::class, 'index'])
+        ->name('email-templates');
+    
+    Route::get('/campaigns', [App\Http\Controllers\CampaignController::class, 'index'])
+        ->name('campaigns');
+    
+    Route::get('/analytics', [App\Http\Controllers\AnalyticsController::class, 'index'])
+        ->name('analytics');
+});
 
 require __DIR__.'/auth.php';

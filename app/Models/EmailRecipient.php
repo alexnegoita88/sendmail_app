@@ -13,6 +13,7 @@ class EmailRecipient extends Model
 
     protected $fillable = [
         'campaign_id',
+        'email_list_id',
         'email',
         'name',
         'tracking_token',

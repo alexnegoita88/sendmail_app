@@ -13,7 +13,8 @@ return new class extends Migration
     {
         Schema::create('email_recipients', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('campaign_id')->constrained()->onDelete('cascade');
+            $table->foreignId('campaign_id')->nullable()->constrained()->onDelete('cascade');
+            $table->foreignId('email_list_id')->nullable()->constrained()->onDelete('cascade');
             $table->string('email');
             $table->string('name')->nullable();
             $table->string('tracking_token')->unique();

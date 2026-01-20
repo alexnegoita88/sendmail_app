@@ -17,7 +17,7 @@
 
             <!-- Main Navigation Cards -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                
+
                 <!-- File Upload Card -->
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg hover:shadow-lg transition-shadow duration-300">
                     <div class="p-6">
@@ -33,7 +33,7 @@
                             </div>
                         </div>
                         <div class="mt-4">
-                            <a href="#" class="text-blue-600 hover:text-blue-800 font-medium">Accesează</a>
+                            <a href="{{ route('file-upload') }}" class="text-blue-600 hover:text-blue-800 font-medium">Accesează</a>
                         </div>
                     </div>
                 </div>
@@ -53,7 +53,7 @@
                             </div>
                         </div>
                         <div class="mt-4">
-                            <a href="#" class="text-green-600 hover:text-green-800 font-medium">Accesează</a>
+                            <a href="{{ route('email-templates') }}" class="text-green-600 hover:text-green-800 font-medium">Accesează</a>
                         </div>
                     </div>
                 </div>
@@ -73,7 +73,7 @@
                             </div>
                         </div>
                         <div class="mt-4">
-                            <a href="#" class="text-purple-600 hover:text-purple-800 font-medium">Accesează</a>
+                            <a href="{{ route('campaigns') }}" class="text-purple-600 hover:text-purple-800 font-medium">Accesează</a>
                         </div>
                     </div>
                 </div>
@@ -93,35 +93,13 @@
                             </div>
                         </div>
                         <div class="mt-4">
-                            <a href="#" class="text-orange-600 hover:text-orange-800 font-medium">Accesează</a>
+                            <a href="{{ route('analytics') }}" class="text-orange-600 hover:text-orange-800 font-medium">Accesează</a>
                         </div>
                     </div>
                 </div>
 
                 <!-- Quick Stats Card -->
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg hover:shadow-lg transition-shadow duration-300">
-                    <div class="p-6">
-                        <h4 class="text-lg font-semibold text-gray-900 mb-4">Statistici Rapide</h4>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div class="text-center">
-                                <div class="text-2xl font-bold text-blue-600">0</div>
-                                <div class="text-sm text-gray-600">Liste Încărcate</div>
-                            </div>
-                            <div class="text-center">
-                                <div class="text-2xl font-bold text-green-600">0</div>
-                                <div class="text-sm text-gray-600">Șabloane</div>
-                            </div>
-                            <div class="text-center">
-                                <div class="text-2xl font-bold text-purple-600">0</div>
-                                <div class="text-sm text-gray-600">Campanii</div>
-                            </div>
-                            <div class="text-center">
-                                <div class="text-2xl font-bold text-orange-600">0</div>
-                                <div class="text-sm text-gray-600">Emailuri Trimise</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                @livewire('dashboard')
 
                 <!-- System Status Card -->
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg hover:shadow-lg transition-shadow duration-300">
@@ -144,6 +122,7 @@
                     </div>
                 </div>
             </div>
+
         </div>
     </div>
 </x-app-layout>

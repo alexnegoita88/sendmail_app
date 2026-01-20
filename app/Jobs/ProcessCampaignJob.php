@@ -1,0 +1,153 @@
+<?php
+
+namespace App\Jobs;
+
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
+use App\Models\Campaign;
+use App\Models\EmailRecipient;
+use App\Models\RateLimitLog;
+use App\Jobs\SendEmailJob;
+
+class ProcessCampaignJob implements ShouldQueue
+{
+    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+
+    protected $campaignId;
+
+    /**
+     * Create a new job instance.
+     */
+    public function __construct($campaignId)
+    {
+        $this->campaignId = $campaignId;
+    }
+
+    /**
+     * Execute the job.
+     */
+    public function handle(): void
+    {
+        Log::info("ProcessCampaignJob: Starting campaign processing for ID: {$this->campaignId}");
+        
+        $campaign = Campaign::find($this->campaignId);
+        
+        if (!$campaign) {
+            Log::error("ProcessCampaignJob: Campaign not found: {$this->campaignId}");
+            return;
+        }
+
+        Log::info("ProcessCampaignJob: Found campaign {$campaign->name} with status: {$campaign->status}");
+
+        // Update campaign status to running
+        $campaign->update([
+            'status' => 'running',
+            'started_at' => now()
+        ]);
+
+        Log::info("ProcessCampaignJob: Updated campaign {$campaign->name} status to running");
+
+        // Get pending recipients for this campaign
+        Log::info("ProcessCampaignJob: Getting pending recipients for campaign {$campaign->name}");
+        $recipients = $campaign->emailRecipients()->where('status', 'pending')->get();
+
+        Log::info("ProcessCampaignJob: Found {$recipients->count()} pending recipients for campaign {$campaign->name}");
+
+        if ($recipients->isEmpty()) {
+            Log::info("ProcessCampaignJob: No pending recipients found for campaign {$campaign->name}");
+            $campaign->update([
+                'status' => 'completed',
+                'completed_at' => now()
+            ]);
+            return;
+        }
+
+        // Set campaign_id for all recipients
+        Log::info("ProcessCampaignJob: Setting campaign_id for {$recipients->count()} recipients");
+        $campaign->emailList->emailRecipients()->where('status', 'pending')->update([
+            'campaign_id' => $campaign->id
+        ]);
+
+        $emailsSent = 0;
+        $currentTime = now();
+
+        Log::info("ProcessCampaignJob: Starting to dispatch email jobs for campaign {$campaign->name}");
+
+        foreach ($recipients as $recipient) {
+            Log::info("ProcessCampaignJob: Processing recipient {$recipient->email} for campaign {$campaign->name}");
+            
+            // Check rate limiting (50 emails per minute)
+            if (!$this->checkRateLimit()) {
+                Log::warning("ProcessCampaignJob: Rate limit exceeded for campaign {$campaign->name}, releasing job back to queue");
+                // Rate limit exceeded, delay the job
+                $this->release(60); // Release back to queue after 60 seconds
+                return;
+            }
+
+            // Dispatch email sending job
+            Log::info("ProcessCampaignJob: Dispatching SendEmailJob for recipient {$recipient->email}");
+            SendEmailJob::dispatch($recipient->id);
+
+            $emailsSent++;
+            
+            Log::info("ProcessCampaignJob: Dispatched {$emailsSent} email jobs so far for campaign {$campaign->name}");
+            
+            // Rate limiting: wait 1.2 seconds between emails (50 per minute = 1.2 seconds per email)
+            if ($emailsSent % 50 === 0) {
+                // After every 50 emails, wait for the minute to reset
+                Log::info("ProcessCampaignJob: Waiting 1 second after 50 emails for campaign {$campaign->name}");
+                sleep(1);
+            } else {
+                // Small delay between emails
+                usleep(100000); // 0.1 seconds
+            }
+        }
+
+        // Update campaign completion
+        Log::info("ProcessCampaignJob: Campaign {$campaign->name} completed, updating status");
+        $campaign->update([
+            'status' => 'completed',
+            'completed_at' => now()
+        ]);
+
+        Log::info("Campaign {$campaign->name} completed. Sent {$emailsSent} emails.");
+    }
+
+    /**
+     * Check if we can send more emails based on rate limiting
+     */
+    protected function checkRateLimit(): bool
+    {
+        $now = now();
+        $minuteStart = $now->copy()->startOfMinute();
+        $minuteEnd = $now->copy()->endOfMinute();
+
+        // Check if we have a rate limit log for this minute
+        $rateLimit = RateLimitLog::where('type', 'email_sending')
+            ->whereBetween('created_at', [$minuteStart, $minuteEnd])
+            ->first();
+
+        if (!$rateLimit) {
+            // Create new rate limit log
+            RateLimitLog::create([
+                'type' => 'email_sending',
+                'count' => 1,
+                'reset_at' => $minuteEnd
+            ]);
+            return true;
+        }
+
+        // Check if we've reached the limit
+        if ($rateLimit->count >= 50) {
+            return false;
+        }
+
+        // Increment count
+        $rateLimit->increment('count');
+        return true;
+    }
+}
