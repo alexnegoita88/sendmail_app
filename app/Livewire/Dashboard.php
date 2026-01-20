@@ -28,7 +28,43 @@ class Dashboard extends Component
             'emails_sent' => EmailRecipient::whereHas('campaign', function($query) use ($userId) {
                 $query->where('user_id', $userId);
             })->where('status', 'sent')->count(),
+            'system_status' => $this->getSystemStatus(),
         ];
+    }
+
+    protected function getSystemStatus()
+    {
+        return [
+            'smtp_connected' => $this->checkSmtpConnection(),
+            'database_connected' => $this->checkDatabaseConnection(),
+            'rate_limit' => '50/min', // This could be made dynamic if needed
+        ];
+    }
+
+    protected function checkSmtpConnection()
+    {
+        try {
+            // Try to connect to SMTP server
+            $connection = @fsockopen('smtp.office365.com', 587, $errno, $errstr, 5);
+            if ($connection) {
+                fclose($connection);
+                return true;
+            }
+            return false;
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
+
+    protected function checkDatabaseConnection()
+    {
+        try {
+            // Test database connection by running a simple query
+            \DB::select('SELECT 1');
+            return true;
+        } catch (\Exception $e) {
+            return false;
+        }
     }
 
     public function render()
