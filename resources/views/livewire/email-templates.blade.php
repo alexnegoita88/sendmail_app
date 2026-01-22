@@ -52,22 +52,41 @@
                 </div>
 
                 <div>
-                    <label for="content" class="block text-sm font-medium text-gray-700">Conținut Email</label>
+                    <div class="flex items-center justify-between mb-2">
+                        <label for="content" class="block text-sm font-medium text-gray-700">Conținut Email</label>
+                        <button
+                            type="button"
+                            wire:click="toggleVisualEditor"
+                            class="inline-flex items-center px-3 py-1 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                        >
+                            {{ $useVisualEditor ? 'Editor HTML' : 'Editor Vizual' }}
+                        </button>
+                    </div>
+
                     <div class="mt-1">
-                        @if($isHtml)
-                            <textarea 
-                                wire:model="content"
-                                rows="12"
-                                class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                                placeholder="Introduceți conținutul HTML al emailului..."
-                            ></textarea>
+                        @if($useVisualEditor)
+                            <div wire:ignore>
+                                <div
+                                    id="grapesjs-editor"
+                                    class="grapesjs-editor-container"
+                                ></div>
+                            </div>
                         @else
-                            <textarea 
-                                wire:model="content"
-                                rows="12"
-                                class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                                placeholder="Introduceți conținutul text al emailului..."
-                            ></textarea>
+                            @if($isHtml)
+                                <textarea
+                                    wire:model="content"
+                                    rows="12"
+                                    class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                    placeholder="Introduceți conținutul HTML al emailului..."
+                                ></textarea>
+                            @else
+                                <textarea
+                                    wire:model="content"
+                                    rows="12"
+                                    class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                    placeholder="Introduceți conținutul text al emailului..."
+                                ></textarea>
+                            @endif
                         @endif
                     </div>
                     @error('content') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror

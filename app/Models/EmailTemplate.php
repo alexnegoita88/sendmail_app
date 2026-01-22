@@ -17,11 +17,14 @@ class EmailTemplate extends Model
         'content',
         'is_html',
         'placeholders',
+        'mjml_content',
+        'editor_data',
         'user_id',
     ];
 
     protected $casts = [
         'placeholders' => 'array',
+        'editor_data' => 'array',
         'is_html' => 'boolean',
     ];
 

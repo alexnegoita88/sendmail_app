@@ -11,13 +11,21 @@ class EmailTemplates extends Component
     public $subject;
     public $content;
     public $isHtml = true;
+    public $mjmlContent = '';
+    public $editorData = [];
     public $editingTemplateId = null;
+    public $useVisualEditor = false;
 
     protected $rules = [
         'name' => 'required|string|max:255',
         'subject' => 'required|string|max:255',
         'content' => 'required|string',
         'isHtml' => 'boolean',
+    ];
+
+    protected $listeners = [
+        'mjmlContentUpdated' => 'updateMjmlContent',
+        'editorDataUpdated' => 'updateEditorData',
     ];
 
     public function render()
@@ -35,28 +43,48 @@ class EmailTemplates extends Component
     {
         $this->validate();
 
+        // If using visual editor, convert MJML to HTML for content field
+        if ($this->useVisualEditor && $this->mjmlContent) {
+            // For now, we'll store MJML in content field, but ideally we'd convert to HTML
+            $this->content = $this->mjmlContent;
+        }
+
         if ($this->editingTemplateId) {
             $template = EmailTemplate::where('id', $this->editingTemplateId)
                 ->where('user_id', auth()->id())
                 ->first();
 
             if ($template) {
-                $template->update([
+                $updateData = [
                     'name' => $this->name,
                     'subject' => $this->subject,
                     'content' => $this->content,
                     'is_html' => $this->isHtml,
-                ]);
+                ];
+
+                if ($this->useVisualEditor) {
+                    $updateData['mjml_content'] = $this->mjmlContent;
+                    $updateData['editor_data'] = $this->editorData;
+                }
+
+                $template->update($updateData);
                 session()->flash('message', 'Șablon actualizat cu succes!');
             }
         } else {
-            EmailTemplate::create([
+            $createData = [
                 'name' => $this->name,
                 'subject' => $this->subject,
                 'content' => $this->content,
                 'is_html' => $this->isHtml,
                 'user_id' => auth()->id(),
-            ]);
+            ];
+
+            if ($this->useVisualEditor) {
+                $createData['mjml_content'] = $this->mjmlContent;
+                $createData['editor_data'] = $this->editorData;
+            }
+
+            EmailTemplate::create($createData);
             session()->flash('message', 'Șablon creat cu succes!');
         }
 
@@ -75,6 +103,11 @@ class EmailTemplates extends Component
             $this->subject = $template->subject;
             $this->content = $template->content;
             $this->isHtml = $template->is_html;
+            $this->mjmlContent = $template->mjml_content ?? '';
+            $this->editorData = $template->editor_data ?? [];
+
+            // Check if template was created with visual editor
+            $this->useVisualEditor = !empty($template->mjml_content);
         }
     }
 
@@ -92,7 +125,33 @@ class EmailTemplates extends Component
 
     public function resetForm()
     {
-        $this->reset(['name', 'subject', 'content', 'isHtml', 'editingTemplateId']);
+        $this->reset(['name', 'subject', 'content', 'isHtml', 'mjmlContent', 'editorData', 'editingTemplateId', 'useVisualEditor']);
+    }
+
+    public function toggleVisualEditor()
+    {
+        $this->useVisualEditor = !$this->useVisualEditor;
+
+        // Reset MJML content when switching modes
+        if (!$this->useVisualEditor) {
+            $this->mjmlContent = '';
+            $this->editorData = [];
+        }
+
+        // Dispatch event to initialize editor when switching to visual mode
+        if ($this->useVisualEditor) {
+            $this->dispatch('init-grapesjs-editor');
+        }
+    }
+
+    public function updateMjmlContent($content)
+    {
+        $this->mjmlContent = $content;
+    }
+
+    public function updateEditorData($data)
+    {
+        $this->editorData = $data;
     }
 
     public function previewTemplate()

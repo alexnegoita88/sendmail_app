@@ -53,7 +53,7 @@
                             </div>
                         </div>
                         <div class="mt-4">
-                            <a href="{{ route('email-templates') }}" class="text-green-600 hover:text-green-800 font-medium">Accesează</a>
+                            <a href="{{ route('email-templates.index') }}" class="text-green-600 hover:text-green-800 font-medium">Accesează</a>
                         </div>
                     </div>
                 </div>

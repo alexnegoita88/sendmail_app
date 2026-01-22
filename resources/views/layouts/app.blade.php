@@ -29,7 +29,9 @@
 
             <!-- Page Content -->
             <main>
-                {{ $slot }}
+                <div id="app">
+                    {{ $slot }}
+                </div>
             </main>
         </div>
     </body>
