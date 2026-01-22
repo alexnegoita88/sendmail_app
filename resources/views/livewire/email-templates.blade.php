@@ -38,16 +38,22 @@
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Tip Conținut</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Tip Editor</label>
                     <div class="flex space-x-4">
-                        <label class="inline-flex items-center">
-                            <input type="radio" wire:model="isHtml" value="1" class="form-radio">
-                            <span class="ml-2">HTML</span>
-                        </label>
-                        <label class="inline-flex items-center">
-                            <input type="radio" wire:model="isHtml" value="0" class="form-radio">
-                            <span class="ml-2">Text Simplu</span>
-                        </label>
+                        <button 
+                            wire:click="useSimpleEditor"
+                            type="button"
+                            class="{{ $editorType === 'simple' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800' }} 
+                                px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+                            Editor Simplu
+                        </button>
+                        <button 
+                            wire:click="useTinyMCE"
+                            type="button"
+                            class="{{ $editorType === 'tinymce' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800' }} 
+                                px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+                            Editor Avansat (TinyMCE)
+                        </button>
                     </div>
                 </div>
 
@@ -55,13 +61,23 @@
                     <label for="content" class="block text-sm font-medium text-gray-700">Conținut Email</label>
                     <div class="mt-1">
                         @if($isHtml)
-                            <textarea 
-                                wire:model="content"
-                                rows="12"
-                                class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                                placeholder="Introduceți conținutul HTML al emailului..."
-                            ></textarea>
+                            @if($editorType === 'tinymce')
+                                <div wire:ignore>
+                                    <textarea id="tinymce-content">
+                                        {!! $content !!}
+                                    </textarea>
+                                </div>
+                            @else
+                                <!-- Simple HTML Editor -->
+                                <textarea 
+                                    wire:model="content"
+                                    rows="12"
+                                    class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                    placeholder="Introduceți conținutul HTML al emailului..."
+                                ></textarea>
+                            @endif
                         @else
+                            <!-- Text Editor -->
                             <textarea 
                                 wire:model="content"
                                 rows="12"
@@ -175,3 +191,24 @@
         </div>
     </div>
 </div>
+@push('scripts')
+<script>
+document.addEventListener('livewire:init', () => {
+
+    const init = () => {
+        if (document.getElementById('tinymce-content')) {
+            window.initTinyMCEEditor();
+        }
+    };
+
+    init();
+
+    Livewire.hook('commit', ({ succeed }) => {
+        succeed(() => {
+            init();
+        });
+    });
+});
+</script>
+@endpush
+

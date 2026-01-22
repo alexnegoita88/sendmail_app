@@ -19,6 +19,7 @@ Route::view('profile', 'profile')
 Route::get('/track/{token}', [App\Http\Controllers\EmailTrackingController::class, 'trackOpen'])
     ->name('email.track');
 
+
 // Module pages routes
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/file-upload', [App\Http\Controllers\FileUploadController::class, 'index'])
@@ -26,6 +27,21 @@ Route::middleware(['auth', 'verified'])->group(function () {
     
     Route::get('/email-templates', [App\Http\Controllers\EmailTemplateController::class, 'index'])
         ->name('email-templates');
+    
+    Route::get('/email-templates/create', [App\Http\Controllers\EmailTemplateController::class, 'create'])
+        ->name('email-templates.create');
+    
+    Route::post('/email-templates', [App\Http\Controllers\EmailTemplateController::class, 'store'])
+        ->name('email-templates.store');
+    
+    Route::get('/email-templates/{id}/edit', [App\Http\Controllers\EmailTemplateController::class, 'edit'])
+        ->name('email-templates.edit');
+    
+    Route::put('/email-templates/{id}', [App\Http\Controllers\EmailTemplateController::class, 'update'])
+        ->name('email-templates.update');
+    
+    Route::delete('/email-templates/{id}', [App\Http\Controllers\EmailTemplateController::class, 'destroy'])
+        ->name('email-templates.destroy');
     
     Route::get('/campaigns', [App\Http\Controllers\CampaignController::class, 'index'])
         ->name('campaigns');

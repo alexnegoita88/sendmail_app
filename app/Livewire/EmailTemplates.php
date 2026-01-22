@@ -12,6 +12,7 @@ class EmailTemplates extends Component
     public $content;
     public $isHtml = true;
     public $editingTemplateId = null;
+    public $editorType = 'tinymce'; // 'simple' sau 'tinymce'
 
     protected $rules = [
         'name' => 'required|string|max:255',
@@ -98,5 +99,35 @@ class EmailTemplates extends Component
     public function previewTemplate()
     {
         return $this->content;
+    }
+
+    /**
+     * Schimbă tipul de editor la simplu
+     */
+    public function useSimpleEditor()
+    {
+        $this->editorType = 'simple';
+        $this->isHtml = false; // Setăm text simplu pentru editorul simplu
+        $this->dispatch('editorTypeChanged');
+    }
+
+    /**
+     * Schimbă tipul de editor la TinyMCE
+     */
+    public function useTinyMCE()
+    {
+        $this->editorType = 'tinymce';
+        $this->isHtml = true; // Forțăm HTML pentru TinyMCE
+        $this->dispatch('editorTypeChanged');
+    }
+
+    /**
+     * Ascultă evenimentul de actualizare a conținutului din TinyMCE
+     */
+    protected $listeners = ['contentUpdated'];
+
+    public function contentUpdated($content)
+    {
+        $this->content = $content;
     }
 }
