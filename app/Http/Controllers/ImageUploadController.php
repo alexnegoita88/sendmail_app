@@ -26,8 +26,8 @@ class ImageUploadController extends Controller
         }
         $file->move($destinationPath, $filename);
 
-        // URL public
-        $url = asset('uploads/' . $filename);
+        // URL public absolut folosind APP_URL
+        $url = url('uploads/' . $filename);
 
         return response()->json(['url' => $url]);
     }

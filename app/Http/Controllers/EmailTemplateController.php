@@ -70,10 +70,10 @@ class EmailTemplateController extends Controller
             ->firstOrFail();
 
         $template->update([
-            'name' => $request->name,
-            'subject' => $request->subject,
-            'content' => $request->content,
-            'is_html' => $request->is_html ?? true,
+            'name' => $request->input('name'),
+            'subject' =>$request->input('subject'),
+            'content' => $request->input('content'),
+            'is_html' => $request->input('is_html') ?? true,
         ]);
 
         return redirect()->route('email-templates')
