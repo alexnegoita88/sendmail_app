@@ -145,6 +145,29 @@ window.switchEditor = function (type) {
 };
 
 // Inițializăm editorul la încărcarea paginii
-document.addEventListener('DOMContentLoaded', function () {
-    initTinyMCEEditor();
+document.addEventListener('DOMContentLoaded', function() {
+    const isHtmlInput = document.getElementById('is_html');
+    if (isHtmlInput) {
+        const isHtml = isHtmlInput.value === '1';
+        if (isHtml) {
+            initTinyMCEEditor();
+        } else {
+            switchToSimpleEditor();
+        }
+    } else {
+        // Dacă nu există câmpul is_html (pagina de creare), inițializăm TinyMCE
+        initTinyMCEEditor();
+    }
 });
+
+// Funcție pentru comutarea la editor simplu
+function switchToSimpleEditor() {
+    if (tinymce.get('tinymce-content')) {
+        tinymce.get('tinymce-content').destroy();
+    }
+    // Setăm valoarea is_html la 0
+    const isHtmlInput = document.getElementById('is_html');
+    if (isHtmlInput) {
+        isHtmlInput.value = '0';
+    }
+}
