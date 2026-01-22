@@ -34,12 +34,14 @@ import 'tinymce/plugins/table';
 // import 'tinymce/plugins/help';
 import 'tinymce/plugins/wordcount';
 
+// Funcție unică pentru inițializarea TinyMCE cu upload la server
 function initTinyMCEEditor() {
     const textarea = document.getElementById('tinymce-content');
     if (!textarea) return;
 
+    // Distrugem editorul dacă există deja
     if (tinymce.get('tinymce-content')) {
-        tinymce.get('tinymce-content').remove();
+        tinymce.get('tinymce-content').destroy();
     }
 
     tinymce.init({
@@ -60,87 +62,88 @@ function initTinyMCEEditor() {
             bold italic backcolor |
             alignleft aligncenter alignright alignjustify |
             bullist numlist outdent indent |
-            removeformat
+            removeformat | image
         `,
 
         // 🔴 OBLIGATORIU CÂND imporți CSS manual
         skin: false,
         content_css: false,
-        images_upload_handler: function (blobInfo) {
-            return new Promise((resolve, reject) => {
-                const maxSize = 500 * 1024; // 500 KB
+        
+        // Handler pentru upload-ul de imagini la server
+        images_upload_handler: function (blobInfo, success, failure) {
+            const maxSize = 500 * 1024; // 500 KB
+            const file = blobInfo.blob();
 
-                if (blobInfo.blob().size > maxSize) {
-                    reject('Imaginea este prea mare (max 500KB)');
-                    return;
+            if (file.size > maxSize) {
+                failure('Imaginea este prea mare (max 500KB)');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            // RETURN fetch pentru TinyMCE
+            return fetch('/upload-image', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.url) {
+                    return { url: data.url }; // returnăm obiectul așteptat de TinyMCE
+                } else {
+                    throw new Error(data.error || 'Upload failed');
                 }
-
-                const reader = new FileReader();
-                reader.onload = function () {
-                    resolve({ url: reader.result }); // <--- obiect cu url
-                };
-                reader.onerror = function () {
-                    reject('Image conversion failed');
-                };
-                reader.readAsDataURL(blobInfo.blob());
+            })
+            .catch(err => {
+                failure(err.message);
             });
         }
-
-
     });
 }
 
 // expose global (Laravel / Blade)
 window.initTinyMCEEditor = initTinyMCEEditor;
 
-// auto init
-document.addEventListener('DOMContentLoaded', initTinyMCEEditor);
-
 // Funcția pentru comutarea între tipuri de editor
 window.switchEditor = function (type) {
+    const isHtmlInput = document.getElementById('is_html');
+    const container = document.getElementById('tinymce-content').parentElement;
+    const currentContent = document.getElementById('tinymce-content').value;
+
+    // Distrugem editorul dacă există
+    if (tinymce.get('tinymce-content')) {
+        tinymce.get('tinymce-content').destroy();
+    }
+
     if (type === 'simple') {
         // Switch to simple editor
-        if (tinymce.get('tinymce-content')) {
-            tinymce.get('tinymce-content').destroy();
-        }
-        // Convert to simple textarea
-        const content = document.getElementById('tinymce-content').value;
         const textarea = document.createElement('textarea');
         textarea.id = 'tinymce-content';
         textarea.name = 'content';
         textarea.rows = 12;
         textarea.className = 'block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm';
         textarea.placeholder = 'Introduceți conținutul text al emailului...';
-        textarea.value = content;
+        textarea.value = currentContent;
 
-        const container = document.getElementById('tinymce-content').parentElement;
         container.replaceChild(textarea, document.getElementById('tinymce-content'));
-
-        // Set is_html to false for simple editor
-        document.getElementById('is_html').value = '0';
+        isHtmlInput.value = '0';
     } else {
         // Switch to TinyMCE
-        if (tinymce.get('tinymce-content')) {
-            tinymce.get('tinymce-content').destroy();
-        }
-        // Convert to TinyMCE textarea
-        const content = document.getElementById('tinymce-content').value;
         const textarea = document.createElement('textarea');
         textarea.id = 'tinymce-content';
         textarea.name = 'content';
         textarea.rows = 12;
         textarea.className = 'block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm';
         textarea.placeholder = 'Introduceți conținutul HTML al emailului...';
-        textarea.value = content;
+        textarea.value = currentContent;
 
-        const container = document.getElementById('tinymce-content').parentElement;
         container.replaceChild(textarea, document.getElementById('tinymce-content'));
-
-        // Initialize TinyMCE
+        isHtmlInput.value = '1';
         initTinyMCEEditor();
-
-        // Set is_html to true for TinyMCE editor
-        document.getElementById('is_html').value = '1';
     }
 };
 
@@ -152,22 +155,11 @@ document.addEventListener('DOMContentLoaded', function() {
         if (isHtml) {
             initTinyMCEEditor();
         } else {
-            switchToSimpleEditor();
+            // Setăm valoarea is_html la 0 pentru editor simplu
+            isHtmlInput.value = '0';
         }
     } else {
         // Dacă nu există câmpul is_html (pagina de creare), inițializăm TinyMCE
         initTinyMCEEditor();
     }
 });
-
-// Funcție pentru comutarea la editor simplu
-function switchToSimpleEditor() {
-    if (tinymce.get('tinymce-content')) {
-        tinymce.get('tinymce-content').destroy();
-    }
-    // Setăm valoarea is_html la 0
-    const isHtmlInput = document.getElementById('is_html');
-    if (isHtmlInput) {
-        isHtmlInput.value = '0';
-    }
-}

@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\ImageUploadController;
 
 // Redirect root to login
 Route::redirect('/', '/login');
@@ -49,5 +50,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/analytics', [App\Http\Controllers\AnalyticsController::class, 'index'])
         ->name('analytics');
 });
+
+// Image upload route for TinyMCE
+Route::post('/upload-image', [ImageUploadController::class, 'upload'])->name('image.upload');
 
 require __DIR__.'/auth.php';
