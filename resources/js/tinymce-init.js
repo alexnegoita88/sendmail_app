@@ -75,7 +75,7 @@ function initTinyMCEEditor() {
             const file = blobInfo.blob();
 
             if (file.size > maxSize) {
-                failure('Imaginea este prea mare (max 500KB)');
+                failure('Imaginea este prea mare (max 512KB)');
                 return;
             }
 
@@ -101,7 +101,12 @@ function initTinyMCEEditor() {
             .catch(err => {
                 failure(err.message);
             });
-        }
+        },
+
+        // 🔴 CRITICAL: Force separate URLs for emails
+        relative_urls: false,
+        remove_script_host: false,
+        convert_urls: false,
     });
 }
 
