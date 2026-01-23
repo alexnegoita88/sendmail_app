@@ -21,6 +21,7 @@ class Campaign extends Model
         'emails_opened',
         'started_at',
         'completed_at',
+        'scheduled_at',
         'error_message',
         'user_id',
     ];
@@ -28,6 +29,7 @@ class Campaign extends Model
     protected $casts = [
         'started_at' => 'datetime',
         'completed_at' => 'datetime',
+        'scheduled_at' => 'datetime',
     ];
 
     public function user(): BelongsTo
@@ -45,8 +47,8 @@ class Campaign extends Model
         return $this->belongsTo(EmailList::class);
     }
 
-    public function emailRecipients(): HasMany
+    public function campaignResults(): HasMany
     {
-        return $this->hasMany(EmailRecipient::class);
+        return $this->hasMany(CampaignResult::class);
     }
 }

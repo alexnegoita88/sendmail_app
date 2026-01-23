@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use App\Models\CampaignResult;
 use App\Models\EmailRecipient;
 use App\Models\EmailTracking;
 
@@ -14,26 +15,29 @@ class EmailTrackingController extends Controller
      */
     public function trackOpen($token)
     {
-        $recipient = EmailRecipient::where('tracking_token', $token)->first();
-        
-        if (!$recipient) {
+        $result = CampaignResult::query()->where('tracking_token', '=', $token)->first();
+
+        if (!$result) {
             return response('', 404)->header('Content-Type', 'image/gif');
         }
 
-        // Update recipient status to opened if not already
-        if ($recipient->status !== 'opened') {
-            $recipient->update([
+        // Update result status to opened if not already
+        if ($result->status !== 'opened') {
+            $result->update([
                 'status' => 'opened',
-                'opened_at' => now()
+                'opened_at' => now(),
+                'ip_address' => $this->getIpAddress(),
+                'user_agent' => request()->header('User-Agent'),
             ]);
 
             // Update campaign stats
-            $recipient->campaign->increment('emails_opened');
+            $result->campaign->increment('emails_opened', 1, []);
         }
 
         // Create tracking record
-        EmailTracking::create([
-            'email_recipient_id' => $recipient->id,
+        EmailTracking::query()->create([
+            'email_recipient_id' => $result->email_recipient_id,
+            'campaign_result_id' => $result->id,
             'event_type' => 'opened',
             'ip_address' => $this->getIpAddress(),
             'user_agent' => request()->header('User-Agent'),
@@ -91,7 +95,7 @@ class EmailTrackingController extends Controller
     protected function getDevice()
     {
         $userAgent = request()->header('User-Agent');
-        
+
         if (preg_match('/Mobile|Android|iPhone|iPad|BlackBerry|IEMobile|Opera Mini/i', $userAgent)) {
             return 'Mobile';
         } elseif (preg_match('/Tablet|iPad/i', $userAgent)) {
@@ -107,7 +111,7 @@ class EmailTrackingController extends Controller
     protected function getBrowser()
     {
         $userAgent = request()->header('User-Agent');
-        
+
         if (preg_match('/Chrome/i', $userAgent)) {
             return 'Chrome';
         } elseif (preg_match('/Firefox/i', $userAgent)) {
@@ -129,7 +133,7 @@ class EmailTrackingController extends Controller
     protected function getOS()
     {
         $userAgent = request()->header('User-Agent');
-        
+
         if (preg_match('/Windows/i', $userAgent)) {
             return 'Windows';
         } elseif (preg_match('/Mac OS/i', $userAgent)) {

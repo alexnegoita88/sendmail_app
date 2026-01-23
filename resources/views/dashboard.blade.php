@@ -89,7 +89,7 @@
                             </div>
                         </div>
                         <div class="mt-4">
-                            <a href="{{ route('campaigns.index') }}"
+                            <a href="{{ route('campaigns') }}"
                                 class="text-purple-600 hover:text-purple-800 font-medium">Accesează</a>
                         </div>
                     </div>

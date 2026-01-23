@@ -119,7 +119,6 @@ class FileUploadService
                     'email' => $email,
                     'name' => $name ?: null,
                     'email_list_id' => $emailList->id,
-                    'tracking_token' => Str::random(64),
                     'created_at' => now(),
                     'updated_at' => now(),
                 ];

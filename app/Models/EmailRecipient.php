@@ -12,26 +12,19 @@ class EmailRecipient extends Model
     use HasFactory;
 
     protected $fillable = [
-        'campaign_id',
         'email_list_id',
         'email',
         'name',
-        'tracking_token',
-        'status',
-        'sent_at',
-        'opened_at',
-        'ip_address',
-        'user_agent',
     ];
 
-    protected $casts = [
-        'sent_at' => 'datetime',
-        'opened_at' => 'datetime',
-    ];
-
-    public function campaign(): BelongsTo
+    public function emailList(): BelongsTo
     {
-        return $this->belongsTo(Campaign::class);
+        return $this->belongsTo(EmailList::class);
+    }
+
+    public function campaignResults(): HasMany
+    {
+        return $this->hasMany(CampaignResult::class, 'email_recipient_id');
     }
 
     public function emailTrackings(): HasMany

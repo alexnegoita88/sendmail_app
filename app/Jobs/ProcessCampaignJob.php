@@ -10,6 +10,7 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 use App\Models\Campaign;
 use App\Models\EmailRecipient;
+use App\Models\CampaignResult;
 use App\Models\RateLimitLog;
 use App\Jobs\SendEmailJob;
 
@@ -33,9 +34,9 @@ class ProcessCampaignJob implements ShouldQueue
     public function handle(): void
     {
         Log::info("ProcessCampaignJob: Starting campaign processing for ID: {$this->campaignId}");
-        
-        $campaign = Campaign::find($this->campaignId);
-        
+
+        $campaign = Campaign::find($this->campaignId, ['*']);
+
         if (!$campaign) {
             Log::error("ProcessCampaignJob: Campaign not found: {$this->campaignId}");
             return;
@@ -51,14 +52,14 @@ class ProcessCampaignJob implements ShouldQueue
 
         Log::info("ProcessCampaignJob: Updated campaign {$campaign->name} status to running");
 
-        // Get pending recipients for this campaign
-        Log::info("ProcessCampaignJob: Getting pending recipients for campaign {$campaign->name}");
-        $recipients = $campaign->emailRecipients()->where('status', 'pending')->get();
+        // Get pending results for this campaign
+        Log::info("ProcessCampaignJob: Getting pending results for campaign {$campaign->name}");
+        $results = $campaign->campaignResults()->where('status', '=', 'pending')->get();
 
-        Log::info("ProcessCampaignJob: Found {$recipients->count()} pending recipients for campaign {$campaign->name}");
+        Log::info("ProcessCampaignJob: Found {$results->count()} pending results for campaign {$campaign->name}");
 
-        if ($recipients->isEmpty()) {
-            Log::info("ProcessCampaignJob: No pending recipients found for campaign {$campaign->name}");
+        if ($results->isEmpty()) {
+            Log::info("ProcessCampaignJob: No pending results found for campaign {$campaign->name}");
             $campaign->update([
                 'status' => 'completed',
                 'completed_at' => now()
@@ -66,22 +67,17 @@ class ProcessCampaignJob implements ShouldQueue
             return;
         }
 
-        // Set campaign_id for all recipients
-        Log::info("ProcessCampaignJob: Setting campaign_id for {$recipients->count()} recipients");
-        $campaign->emailList->emailRecipients()->where('status', 'pending')->update([
-            'campaign_id' => $campaign->id
-        ]);
-
         $emailsSent = 0;
         $currentTime = now();
 
         Log::info("ProcessCampaignJob: Starting to dispatch email jobs for campaign {$campaign->name}");
 
-        foreach ($recipients as $recipient) {
-            Log::info("ProcessCampaignJob: Processing recipient {$recipient->email} for campaign {$campaign->name}");
-            
-            // Check rate limiting (50 emails per minute)
-            if (!$this->checkRateLimit()) {
+        foreach ($results as $result) {
+            Log::info("ProcessCampaignJob: Processing result ID {$result->id} for campaign {$campaign->name}");
+
+            // Check rate limiting
+            $limit = config('app.email_rate_limit', env('EMAIL_RATE_LIMIT', 50));
+            if (!$this->checkRateLimit($limit)) {
                 Log::warning("ProcessCampaignJob: Rate limit exceeded for campaign {$campaign->name}, releasing job back to queue");
                 // Rate limit exceeded, delay the job
                 $this->release(60); // Release back to queue after 60 seconds
@@ -89,17 +85,17 @@ class ProcessCampaignJob implements ShouldQueue
             }
 
             // Dispatch email sending job
-            Log::info("ProcessCampaignJob: Dispatching SendEmailJob for recipient {$recipient->email}");
-            SendEmailJob::dispatch($recipient->id);
+            Log::info("ProcessCampaignJob: Dispatching SendEmailJob for result ID {$result->id}");
+            SendEmailJob::dispatch($result->id);
 
             $emailsSent++;
-            
+
             Log::info("ProcessCampaignJob: Dispatched {$emailsSent} email jobs so far for campaign {$campaign->name}");
-            
-            // Rate limiting: wait 1.2 seconds between emails (50 per minute = 1.2 seconds per email)
-            if ($emailsSent % 50 === 0) {
-                // After every 50 emails, wait for the minute to reset
-                Log::info("ProcessCampaignJob: Waiting 1 second after 50 emails for campaign {$campaign->name}");
+
+            // Rate limiting: wait between emails
+            if ($emailsSent % $limit === 0) {
+                // After every batch, wait for the minute to reset
+                Log::info("ProcessCampaignJob: Waiting 1 second after batch of {$limit} emails for campaign {$campaign->name}");
                 sleep(1);
             } else {
                 // Small delay between emails
@@ -120,20 +116,21 @@ class ProcessCampaignJob implements ShouldQueue
     /**
      * Check if we can send more emails based on rate limiting
      */
-    protected function checkRateLimit(): bool
+    protected function checkRateLimit(int $limit): bool
     {
         $now = now();
         $minuteStart = $now->copy()->startOfMinute();
         $minuteEnd = $now->copy()->endOfMinute();
 
         // Check if we have a rate limit log for this minute
-        $rateLimit = RateLimitLog::where('type', 'email_sending')
+        $rateLimit = RateLimitLog::query()
+            ->where('type', '=', 'email_sending')
             ->whereBetween('created_at', [$minuteStart, $minuteEnd])
             ->first();
 
         if (!$rateLimit) {
             // Create new rate limit log
-            RateLimitLog::create([
+            RateLimitLog::query()->create([
                 'type' => 'email_sending',
                 'count' => 1,
                 'reset_at' => $minuteEnd
@@ -142,12 +139,12 @@ class ProcessCampaignJob implements ShouldQueue
         }
 
         // Check if we've reached the limit
-        if ($rateLimit->count >= 50) {
+        if ($rateLimit->count >= $limit) {
             return false;
         }
 
         // Increment count
-        $rateLimit->increment('count');
+        $rateLimit->increment('count', 1, []);
         return true;
     }
 }

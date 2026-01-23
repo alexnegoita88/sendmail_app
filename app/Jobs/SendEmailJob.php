@@ -10,20 +10,21 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
 use App\Models\EmailRecipient;
+use App\Models\CampaignResult;
 use App\Models\EmailTracking;
 
 class SendEmailJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    protected $emailRecipientId;
+    protected $campaignResultId;
 
     /**
      * Create a new job instance.
      */
-    public function __construct($emailRecipientId)
+    public function __construct($campaignResultId)
     {
-        $this->emailRecipientId = $emailRecipientId;
+        $this->campaignResultId = $campaignResultId;
     }
 
     /**
@@ -31,39 +32,40 @@ class SendEmailJob implements ShouldQueue
      */
     public function handle(): void
     {
-        Log::info("SendEmailJob: Starting job for recipient ID: {$this->emailRecipientId}");
+        Log::info("SendEmailJob: Starting job for result ID: {$this->campaignResultId}");
 
-        $recipient = EmailRecipient::find($this->emailRecipientId, ['*']);
+        $result = CampaignResult::with('emailRecipient')->find($this->campaignResultId, ['*']);
 
-        if (!$recipient) {
-            Log::error("SendEmailJob: Recipient not found with ID: {$this->emailRecipientId}");
+        if (!$result) {
+            Log::error("SendEmailJob: Result not found with ID: {$this->campaignResultId}");
             return;
         }
 
-        Log::info("SendEmailJob: Found recipient {$recipient->email} with status: {$recipient->status}");
+        $recipient = $result->emailRecipient;
+        Log::info("SendEmailJob: Found recipient {$recipient->email} for campaign result ID: {$result->id}");
 
-        if ($recipient->status === 'sent') {
-            Log::warning("SendEmailJob: Email already sent to {$recipient->email}");
+        if ($result->status === 'sent') {
+            Log::warning("SendEmailJob: Email already sent for result ID: {$result->id}");
             return;
         }
 
         try {
             // Get the campaign and template
             Log::info("SendEmailJob: Getting campaign and template for recipient {$recipient->email}");
-            $campaign = $recipient->campaign;
+            $campaign = $result->campaign;
             $template = $campaign->emailTemplate;
 
             Log::info("SendEmailJob: Campaign: {$campaign->name}, Template: {$template->name}");
 
             // Personalize the email content
             Log::info("SendEmailJob: Personalizing content for {$recipient->email}");
-            $content = $this->personalizeContent($template->content, $recipient);
-            $subject = $this->personalizeContent($template->subject, $recipient);
+            $content = $this->personalizeContent($template->content, $recipient, $campaign);
+            $subject = $this->personalizeContent($template->subject, $recipient, $campaign);
 
             // Add tracking pixel to HTML content
             if ($template->is_html) {
                 Log::info("SendEmailJob: Adding tracking pixel for {$recipient->email}");
-                $trackingPixel = $this->generateTrackingPixel($recipient->tracking_token);
+                $trackingPixel = $this->generateTrackingPixel($result->tracking_token);
                 $content .= $trackingPixel;
             }
 
@@ -72,7 +74,7 @@ class SendEmailJob implements ShouldQueue
             Log::info("SendEmailJob: Content length: " . strlen($content));
             Log::info("SendEmailJob: Subject: {$subject}");
 
-            $result = Mail::html($content, function ($message) use ($recipient, $subject, $template) {
+            Mail::html($content, function ($message) use ($recipient, $subject, $template) {
                 $message->to($recipient->email, $recipient->name)
                     ->subject($subject)
                     ->from(config('mail.from.address'), config('mail.from.name'));
@@ -91,12 +93,10 @@ class SendEmailJob implements ShouldQueue
                 }
             });
 
-            Log::info("SendEmailJob: Mail::html() returned: " . ($result ? 'true' : 'false'));
-
             Log::info("SendEmailJob: Email sent successfully to {$recipient->email}");
 
-            // Update recipient status
-            $recipient->update([
+            // Update result status
+            $result->update([
                 'status' => 'sent',
                 'sent_at' => now()
             ]);
@@ -105,20 +105,20 @@ class SendEmailJob implements ShouldQueue
             Log::info("Email sent successfully to {$recipient->email} for campaign {$campaign->name}");
 
             // Update campaign stats
-            $campaign->increment('emails_sent');
+            $campaign->increment('emails_sent', 1, []);
 
         } catch (\Exception $e) {
             Log::error("SendEmailJob: Exception occurred while sending email to {$recipient->email}: " . $e->getMessage());
             Log::error("SendEmailJob: Exception trace: " . $e->getTraceAsString());
 
-            // Update recipient status to failed
-            $recipient->update([
+            // Update result status to failed
+            $result->update([
                 'status' => 'failed',
                 'sent_at' => now()
             ]);
 
             // Update campaign stats
-            $campaign->increment('emails_failed');
+            $campaign->increment('emails_failed', 1, []);
 
             // Log error
             Log::error("Failed to send email to {$recipient->email}: " . $e->getMessage());
@@ -128,13 +128,13 @@ class SendEmailJob implements ShouldQueue
     /**
      * Personalize email content with recipient data
      */
-    protected function personalizeContent($content, $recipient)
+    protected function personalizeContent($content, $recipient, $campaign)
     {
         $replacements = [
             '{name}' => $recipient->name,
             '{email}' => $recipient->email,
             '{date}' => now()->format('Y-m-d'),
-            '{campaign_name}' => $recipient->campaign->name,
+            '{campaign_name}' => $campaign->name,
         ];
 
         return str_replace(array_keys($replacements), array_values($replacements), $content);

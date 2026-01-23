@@ -50,7 +50,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/email-templates/{id}', [App\Http\Controllers\EmailTemplateController::class, 'destroy'])
         ->name('email-templates.destroy');
 
-    Route::get('/campaigns', App\Livewire\Campaigns::class)->name('campaigns.index');
+    Route::get('/campaigns', App\Livewire\Campaigns::class)->name('campaigns');
+    Route::get('/campaigns/{id}/stats', App\Livewire\CampaignStats::class)->name('campaigns.stats');
     Route::get('/campaigns/create', App\Livewire\CreateCampaign::class)->name('campaigns.create');
 
     // Legacy redirect for campaigns

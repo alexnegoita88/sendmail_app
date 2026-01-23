@@ -5,7 +5,7 @@
         </h2>
     </x-slot>
 
-    <div class="py-12" @if($runningCampaignId) wire:poll.2s @endif>
+    <div class="py-12" @if($anyRunning) wire:poll.3s @endif>
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="space-y-6">
 
@@ -100,6 +100,9 @@
                                                 Emailuri</th>
                                             <th
                                                 class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Programată la</th>
+                                            <th
+                                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                 Status</th>
                                             <th
                                                 class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -124,6 +127,9 @@
                                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                     {{ $campaign->emails_sent }} / {{ $campaign->emailList->valid_emails }}
                                                 </td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                    {{ $campaign->scheduled_at ? $campaign->scheduled_at->format('d.m.Y H:i') : '-' }}
+                                                </td>
                                                 <td class="px-6 py-4 whitespace-nowrap">
                                                     <span
                                                         class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $this->getStatusColor($campaign->status) }}">
@@ -131,7 +137,7 @@
                                                     </span>
                                                 </td>
                                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                                                    @if($campaign->status === 'pending')
+                                                    @if($campaign->status === 'pending' || $campaign->status === 'failed')
                                                         <button wire:click="startCampaign({{ $campaign->id }})"
                                                             wire:loading.attr="disabled"
                                                             class="text-green-600 hover:text-green-900 disabled:opacity-50 disabled:cursor-not-allowed">
@@ -156,6 +162,10 @@
                                                             Pauză
                                                         </button>
                                                     @endif
+                                                    <a href="{{ route('campaigns.stats', $campaign->id) }}"
+                                                        class="text-indigo-600 hover:text-indigo-900" wire:navigate>
+                                                        Statistici
+                                                    </a>
                                                     <button wire:click="deleteCampaign({{ $campaign->id }})"
                                                         onclick="return confirm('Sigur doriți să ștergeți această campanie?')"
                                                         class="text-red-600 hover:text-red-900">
