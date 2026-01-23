@@ -78,9 +78,16 @@ class SendEmailJob implements ShouldQueue
                     ->from(config('mail.from.address'), config('mail.from.name'));
 
                 if ($template->attachment_path) {
-                    $message->attach(storage_path('app/' . $template->attachment_path), [
-                        'as' => $template->attachment_name,
-                    ]);
+                    $fullPath = \Illuminate\Support\Facades\Storage::disk('local')->path($template->attachment_path);
+                    Log::info("SendEmailJob: Attaching file: " . $fullPath);
+                    if (file_exists($fullPath)) {
+                        $message->attach($fullPath, [
+                            'as' => $template->attachment_name,
+                        ]);
+                        Log::info("SendEmailJob: File attached successfully to message object.");
+                    } else {
+                        Log::error("SendEmailJob: Attachment file NOT FOUND at: " . $fullPath);
+                    }
                 }
             });
 

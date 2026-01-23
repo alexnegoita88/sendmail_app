@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use Livewire\Component;
+use Livewire\Attributes\Layout;
 use App\Models\Campaign;
 use App\Models\EmailTemplate;
 use App\Models\EmailList;
@@ -20,23 +21,26 @@ class Campaigns extends Component
     public $emailsProcessed = 0;
     public $totalEmails = 0;
 
+    #[Layout('layouts.app')]
     public function render()
     {
-        $campaigns = Campaign::where('user_id', '=', auth()->id())
+        $campaigns = Campaign::query()
+            ->where('user_id', '=', (int) auth()->id())
             ->with(['emailTemplate', 'emailList'])
             ->latest()
             ->paginate(10);
 
         return view('livewire.campaigns', [
             'campaigns' => $campaigns,
-        ])->layout('layouts.app');
+        ]);
     }
 
 
     public function startCampaign($campaignId)
     {
-        $campaign = Campaign::where('id', '=', $campaignId)
-            ->where('user_id', '=', auth()->id())
+        $campaign = Campaign::query()
+            ->where('id', '=', (int) $campaignId)
+            ->where('user_id', '=', (int) auth()->id())
             ->first();
 
         if (!$campaign || $campaign->status !== 'pending') {
@@ -163,10 +167,19 @@ class Campaigns extends Component
         }
 
         // Send the email synchronously
-        Mail::html($content, function ($message) use ($recipient, $subject) {
+        Mail::html($content, function ($message) use ($recipient, $subject, $template) {
             $message->to($recipient->email, $recipient->name)
                 ->subject($subject)
                 ->from(config('mail.from.address'), config('mail.from.name'));
+
+            if ($template->attachment_path) {
+                $fullPath = \Illuminate\Support\Facades\Storage::disk('local')->path($template->attachment_path);
+                if (file_exists($fullPath)) {
+                    $message->attach($fullPath, [
+                        'as' => $template->attachment_name,
+                    ]);
+                }
+            }
         });
 
         // Update recipient status
@@ -196,8 +209,9 @@ class Campaigns extends Component
 
     public function pauseCampaign($campaignId)
     {
-        $campaign = Campaign::where('id', '=', $campaignId)
-            ->where('user_id', '=', auth()->id())
+        $campaign = Campaign::query()
+            ->where('id', '=', (int) $campaignId)
+            ->where('user_id', '=', (int) auth()->id())
             ->first();
 
         if ($campaign && $campaign->status === 'running') {
@@ -208,12 +222,13 @@ class Campaigns extends Component
 
     public function deleteCampaign($campaignId)
     {
-        $campaign = Campaign::where('id', '=', $campaignId)
-            ->where('user_id', '=', auth()->id())
+        $campaign = Campaign::query()
+            ->where('id', '=', (int) $campaignId)
+            ->where('user_id', '=', (int) auth()->id())
             ->first();
 
         if ($campaign) {
-            $campaign->delete();
+            Campaign::destroy($campaign->id);
             session()->flash('message', 'Campanie ștearsă cu succes!');
         }
 
