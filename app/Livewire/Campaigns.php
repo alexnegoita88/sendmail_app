@@ -8,6 +8,7 @@ use App\Models\Campaign;
 use App\Models\EmailTemplate;
 use App\Models\EmailList;
 use App\Models\EmailRecipient;
+use App\Models\CampaignResult;
 use App\Jobs\SendEmailJob;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -65,12 +66,33 @@ class Campaigns extends Component
             'error_message' => null
         ]);
 
-        // Associate all recipients with this campaign and reset their status to pending
-        $campaign->emailList->emailRecipients()->update([
-            'campaign_id' => $campaign->id,
-            'status' => 'pending',
-            'sent_at' => null
-        ]);
+        // Create campaign results for each recipient in the list if not already created
+        $recipients = $campaign->emailList->emailRecipients;
+
+        // Clear previous results if any (e.g. if restarting a failed campaign)
+        $campaign->campaignResults()->delete();
+
+        $results = [];
+        foreach ($recipients as $recipient) {
+            $results[] = [
+                'campaign_id' => $campaign->id,
+                'email_recipient_id' => $recipient->id,
+                'tracking_token' => \Illuminate\Support\Str::random(64),
+                'status' => 'pending',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ];
+
+            // Insert in chunks of 500 to avoid memory issues
+            if (count($results) >= 500) {
+                \App\Models\CampaignResult::insert($results);
+                $results = [];
+            }
+        }
+
+        if (!empty($results)) {
+            \App\Models\CampaignResult::insert($results);
+        }
 
         // Dispatch background job
         if ($isScheduled) {
@@ -96,62 +118,6 @@ class Campaigns extends Component
         // This method is called by Livewire polling
         // We can add any additional logic here if needed
         return;
-    }
-
-    protected function sendEmailToRecipient($recipient, $campaign)
-    {
-        // Get the campaign and template
-        $template = $campaign->emailTemplate;
-
-        // Personalize the email content
-        $content = $this->personalizeContent($template->content, $recipient);
-        $subject = $this->personalizeContent($template->subject, $recipient);
-
-        // Add tracking pixel to HTML content
-        if ($template->is_html) {
-            $trackingPixel = $this->generateTrackingPixel($recipient->tracking_token);
-            $content .= $trackingPixel;
-        }
-
-        // Send the email synchronously
-        Mail::html($content, function ($message) use ($recipient, $subject, $template) {
-            $message->to($recipient->email, $recipient->name)
-                ->subject($subject)
-                ->from(config('mail.from.address'), config('mail.from.name'));
-
-            if ($template->attachment_path) {
-                $fullPath = \Illuminate\Support\Facades\Storage::disk('local')->path($template->attachment_path);
-                if (file_exists($fullPath)) {
-                    $message->attach($fullPath, [
-                        'as' => $template->attachment_name,
-                    ]);
-                }
-            }
-        });
-
-        // Update recipient status
-        $recipient->update([
-            'status' => 'sent',
-            'sent_at' => now()
-        ]);
-    }
-
-    protected function personalizeContent($content, $recipient)
-    {
-        $replacements = [
-            '{name}' => $recipient->name,
-            '{email}' => $recipient->email,
-            '{date}' => now()->format('Y-m-d'),
-            '{campaign_name}' => $recipient->campaign->name,
-        ];
-
-        return str_replace(array_keys($replacements), array_values($replacements), $content);
-    }
-
-    protected function generateTrackingPixel($trackingToken)
-    {
-        $trackingUrl = url("/track/{$trackingToken}");
-        return "<img src=\"{$trackingUrl}\" width=\"1\" height=\"1\" style=\"display:none;\" alt=\"\">";
     }
 
     public function pauseCampaign($campaignId)

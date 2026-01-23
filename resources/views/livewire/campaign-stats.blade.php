@@ -33,6 +33,7 @@
                         <span @class([
                             'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize',
                             'bg-gray-100 text-gray-800' => $campaign->status === 'pending',
+                            'bg-indigo-100 text-indigo-800' => $campaign->status === 'scheduled',
                             'bg-blue-100 text-blue-800' => $campaign->status === 'running',
                             'bg-green-100 text-green-800' => $campaign->status === 'completed',
                             'bg-red-100 text-red-800' => $campaign->status === 'failed',
@@ -211,16 +212,18 @@
                             <tr class="hover:bg-slate-50/80 transition-colors duration-150">
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="flex flex-col">
-                                        <div class="text-sm font-bold text-slate-900">{{ $recipient->name ?? 'Fără nume' }}
+                                        <div class="text-sm font-bold text-slate-900">
+                                            {{ $recipient->emailRecipient->name ?? 'Fără nume' }}
                                         </div>
-                                        <div class="text-sm text-slate-500">{{ $recipient->email }}</div>
+                                        <div class="text-sm text-slate-500">{{ $recipient->emailRecipient->email }}</div>
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <span @class([
                                         'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize',
                                         'bg-gray-100 text-gray-800' => $recipient->status === 'pending',
-                                        'bg-green-100 text-green-800' => $recipient->status === 'sent',
+                                        'bg-blue-100 text-blue-800' => $recipient->status === 'sent',
+                                        'bg-green-100 text-green-800' => $recipient->status === 'opened',
                                         'bg-red-100 text-red-800' => $recipient->status === 'failed',
                                     ])>
                                         {{ $recipient->status }}

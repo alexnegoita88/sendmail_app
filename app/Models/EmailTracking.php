@@ -12,6 +12,7 @@ class EmailTracking extends Model
 
     protected $fillable = [
         'email_recipient_id',
+        'campaign_result_id',
         'event_type',
         'ip_address',
         'user_agent',
@@ -25,5 +26,10 @@ class EmailTracking extends Model
     public function emailRecipient(): BelongsTo
     {
         return $this->belongsTo(EmailRecipient::class);
+    }
+
+    public function campaignResult(): BelongsTo
+    {
+        return $this->belongsTo(CampaignResult::class);
     }
 }

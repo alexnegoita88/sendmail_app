@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use App\Models\Campaign;
+use App\Models\CampaignResult;
 use App\Models\EmailRecipient;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -26,10 +27,11 @@ class CampaignStats extends Component
     {
         $campaign = Campaign::with(['emailTemplate', 'emailList'])->findOrFail($this->campaignId);
 
-        $recipientsQuery = EmailRecipient::query()
+        $resultsQuery = CampaignResult::query()
+            ->with('emailRecipient')
             ->where('campaign_id', '=', (int) $this->campaignId)
             ->when($this->search, function ($query) {
-                $query->where(function ($q) {
+                $query->whereHas('emailRecipient', function ($q) {
                     $q->where('email', 'like', '%' . $this->search . '%')
                         ->orWhere('name', 'like', '%' . $this->search . '%');
                 });
@@ -39,15 +41,15 @@ class CampaignStats extends Component
             })
             ->orderBy('id', 'desc');
 
-        $recipients = $recipientsQuery->paginate(15);
+        $recipients = $resultsQuery->paginate(15);
 
         // Stats for cards
         $stats = [
-            'total' => EmailRecipient::query()->where('campaign_id', '=', $this->campaignId)->count(),
-            'sent' => EmailRecipient::query()->where('campaign_id', '=', $this->campaignId)->where('status', '=', 'sent')->count(),
-            'opened' => EmailRecipient::query()->where('campaign_id', '=', $this->campaignId)->whereNotNull('opened_at')->count(),
-            'failed' => EmailRecipient::query()->where('campaign_id', '=', $this->campaignId)->where('status', '=', 'failed')->count(),
-            'pending' => EmailRecipient::query()->where('campaign_id', '=', $this->campaignId)->where('status', '=', 'pending')->count(),
+            'total' => CampaignResult::query()->where('campaign_id', '=', $this->campaignId)->count(),
+            'sent' => CampaignResult::query()->where('campaign_id', '=', $this->campaignId)->where('status', '=', 'sent')->count(),
+            'opened' => CampaignResult::query()->where('campaign_id', '=', $this->campaignId)->where('status', '=', 'opened')->count(),
+            'failed' => CampaignResult::query()->where('campaign_id', '=', $this->campaignId)->where('status', '=', 'failed')->count(),
+            'pending' => CampaignResult::query()->where('campaign_id', '=', $this->campaignId)->where('status', '=', 'pending')->count(),
         ];
 
         return view('livewire.campaign-stats', [

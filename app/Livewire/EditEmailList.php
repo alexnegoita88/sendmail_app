@@ -137,7 +137,6 @@ class EditEmailList extends Component
             'email_list_id' => $this->listId,
             'name' => $this->newContactName,
             'email' => $this->newContactEmail,
-            'tracking_token' => \Illuminate\Support\Str::random(64),
             'created_at' => now(),
             'updated_at' => now(),
         ]);

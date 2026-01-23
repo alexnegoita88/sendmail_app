@@ -47,8 +47,8 @@ class Campaign extends Model
         return $this->belongsTo(EmailList::class);
     }
 
-    public function emailRecipients(): HasMany
+    public function campaignResults(): HasMany
     {
-        return $this->hasMany(EmailRecipient::class);
+        return $this->hasMany(CampaignResult::class);
     }
 }
