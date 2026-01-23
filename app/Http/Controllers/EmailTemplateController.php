@@ -9,7 +9,8 @@ class EmailTemplateController extends Controller
 {
     public function index()
     {
-        $templates = EmailTemplate::where('user_id', auth()->id())
+        $templates = EmailTemplate::query()
+            ->where('user_id', '=', (int) auth()->id())
             ->latest()
             ->paginate(10);
 
@@ -41,14 +42,15 @@ class EmailTemplateController extends Controller
             'user_id' => auth()->id(),
         ]);
 
-        return redirect()->route('email-templates')
+        return redirect()->route('email-templates.index')
             ->with('message', 'Șablon creat cu succes!');
     }
 
     public function edit($id)
     {
-        $template = EmailTemplate::where('id', $id)
-            ->where('user_id', auth()->id())
+        $template = EmailTemplate::query()
+            ->where('id', '=', (int) $id)
+            ->where('user_id', '=', (int) auth()->id())
             ->firstOrFail();
 
         return view('email-templates.edit', [
@@ -65,29 +67,31 @@ class EmailTemplateController extends Controller
             'is_html' => 'boolean'
         ]);
 
-        $template = EmailTemplate::where('id', $id)
-            ->where('user_id', auth()->id())
+        $template = EmailTemplate::query()
+            ->where('id', '=', (int) $id)
+            ->where('user_id', '=', (int) auth()->id())
             ->firstOrFail();
 
         $template->update([
             'name' => $request->input('name'),
-            'subject' =>$request->input('subject'),
+            'subject' => $request->input('subject'),
             'content' => $request->input('content'),
             'is_html' => $request->input('is_html') ?? true,
         ]);
 
-        return redirect()->route('email-templates')
+        return redirect()->route('email-templates.index')
             ->with('message', 'Șablon actualizat cu succes!');
     }
 
     public function destroy($id)
     {
-        $template = EmailTemplate::where('id', $id)
-            ->where('user_id', auth()->id())
+        $template = EmailTemplate::query()
+            ->where('id', '=', (int) $id)
+            ->where('user_id', '=', (int) auth()->id())
             ->first();
 
         if ($template) {
-            $template->delete();
+            EmailTemplate::destroy($template->id);
         }
 
         return redirect()->route('email-templates.index')

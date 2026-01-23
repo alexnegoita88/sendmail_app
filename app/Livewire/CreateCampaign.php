@@ -1,0 +1,62 @@
+<?php
+
+namespace App\Livewire;
+
+use Livewire\Component;
+use App\Models\Campaign;
+use App\Models\EmailTemplate;
+use App\Models\EmailList;
+
+use Livewire\Attributes\Layout;
+
+class CreateCampaign extends Component
+{
+    public $name;
+    public $emailTemplateId;
+    public $emailListId;
+
+    protected $rules = [
+        'name' => 'required|string|max:255',
+        'emailTemplateId' => 'required|exists:email_templates,id',
+        'emailListId' => 'required|exists:email_lists,id',
+    ];
+
+    public function createCampaign()
+    {
+        $this->validate();
+
+        // Check if email list has valid emails
+        $emailList = EmailList::find($this->emailListId, ['*']);
+        if (!$emailList || $emailList->valid_emails === 0) {
+            session()->flash('error', 'Lista de emailuri nu conține adrese valide!');
+            return;
+        }
+
+        $campaign = Campaign::create([
+            'name' => $this->name,
+            'email_template_id' => $this->emailTemplateId,
+            'email_list_id' => $this->emailListId,
+            'status' => 'pending',
+            'user_id' => auth()->id(),
+        ]);
+
+        session()->flash('message', 'Campanie creată cu succes!');
+
+        return redirect()->route('campaigns.index');
+    }
+
+    #[Layout('layouts.app')]
+    public function render()
+    {
+        $templates = EmailTemplate::query()->where('user_id', '=', (int) auth()->id())->get();
+        $emailLists = EmailList::query()
+            ->where('user_id', '=', (int) auth()->id())
+            ->where('status', '=', 'completed')
+            ->get();
+
+        return view('livewire.create-campaign', [
+            'templates' => $templates,
+            'emailLists' => $emailLists
+        ]);
+    }
+}

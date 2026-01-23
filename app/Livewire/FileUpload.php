@@ -23,13 +23,7 @@ class FileUpload extends Component
 
     public function render()
     {
-        $emailLists = EmailList::where('user_id', auth()->id())
-            ->latest()
-            ->paginate(10);
-
-        return view('livewire.file-upload', [
-            'emailLists' => $emailLists
-        ]);
+        return view('livewire.file-upload');
     }
 
     public function uploadFile()
@@ -44,26 +38,27 @@ class FileUpload extends Component
             $result = $service->processFile($this->file, $this->name, auth()->id());
 
             if ($result['success']) {
-        session()->flash('message', 'Fișier încărcat și procesat cu succes!');
-        $this->reset(['file', 'name']);
-        $this->uploadProgress = 100;
-    } else {
-        session()->flash('error', $result['errors']);
-    }
-} catch (\Exception $e) {
-    session()->flash('error', 'Eroare la procesarea fișierului: ' . $e->getMessage());
-}
+                session()->flash('message', 'Fișier încărcat și procesat cu succes!');
+                return redirect()->route('email-lists.index');
+            } else {
+                session()->flash('error', $result['errors']);
+            }
+        } catch (\Exception $e) {
+            session()->flash('error', 'Eroare la procesarea fișierului: ' . $e->getMessage());
+        }
 
-$this->uploading = false;
+        $this->uploading = false;
     }
 
     public function deleteList($listId)
     {
-        $list = EmailList::where('id', $listId)
-            ->where('user_id', auth()->id())
+        /** @var EmailList|null $list */
+        $list = EmailList::query()
+            ->where('id', '=', (int) $listId)
+            ->where('user_id', '=', (int) auth()->id())
             ->first();
 
-        if ($list) {
+        if ($list instanceof EmailList) {
             // Delete associated file
             if ($list->file_path) {
                 \Storage::delete('public/' . $list->file_path);
@@ -73,7 +68,7 @@ $this->uploading = false;
             $list->emailRecipients()->delete();
 
             // Delete the list
-            $list->delete();
+            EmailList::destroy($list->id);
 
             session()->flash('message', 'Lista de emailuri ștearsă cu succes!');
         }
