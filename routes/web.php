@@ -23,30 +23,40 @@ Route::get('/track/{token}', [App\Http\Controllers\EmailTrackingController::clas
 
 // Module pages routes
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('/file-upload', [App\Http\Controllers\FileUploadController::class, 'index'])
-        ->name('file-upload');
-    
+    // Email Lists Management
+    Route::get('/email-lists', App\Livewire\EmailListsIndex::class)->name('email-lists.index');
+    Route::get('/email-lists/create', App\Livewire\CreateEmailList::class)->name('email-lists.create');
+    Route::get('/email-lists/upload', [App\Http\Controllers\FileUploadController::class, 'index'])->name('email-lists.upload');
+    Route::get('/email-lists/{id}/edit', App\Livewire\EditEmailList::class)->name('email-lists.edit');
+
+    // Legacy redirect for old links
+    Route::redirect('/file-upload', '/email-lists');
+
     Route::get('/email-templates', [App\Http\Controllers\EmailTemplateController::class, 'index'])
-        ->name('email-templates');
-    
+        ->name('email-templates.index');
+
     Route::get('/email-templates/create', [App\Http\Controllers\EmailTemplateController::class, 'create'])
         ->name('email-templates.create');
-    
+
     Route::post('/email-templates', [App\Http\Controllers\EmailTemplateController::class, 'store'])
         ->name('email-templates.store');
-    
+
     Route::get('/email-templates/{id}/edit', [App\Http\Controllers\EmailTemplateController::class, 'edit'])
         ->name('email-templates.edit');
-    
+
     Route::put('/email-templates/{id}', [App\Http\Controllers\EmailTemplateController::class, 'update'])
         ->name('email-templates.update');
-    
+
     Route::delete('/email-templates/{id}', [App\Http\Controllers\EmailTemplateController::class, 'destroy'])
         ->name('email-templates.destroy');
-    
-    Route::get('/campaigns', [App\Http\Controllers\CampaignController::class, 'index'])
-        ->name('campaigns');
-    
+
+    Route::get('/campaigns', App\Livewire\Campaigns::class)->name('campaigns.index');
+    Route::get('/campaigns/create', App\Livewire\CreateCampaign::class)->name('campaigns.create');
+
+    // Legacy redirect for campaigns
+    Route::redirect('/campaigns-old', '/campaigns'); // Not really needed if I update nav, but let's keep name compatibility if possible
+
+
     Route::get('/analytics', [App\Http\Controllers\AnalyticsController::class, 'index'])
         ->name('analytics');
 });
@@ -54,4 +64,4 @@ Route::middleware(['auth', 'verified'])->group(function () {
 // Image upload route for TinyMCE
 Route::post('/upload-image', [ImageUploadController::class, 'upload'])->name('image.upload');
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';

@@ -120,6 +120,8 @@ class FileUploadService
                     'name' => $name ?: null,
                     'email_list_id' => $emailList->id,
                     'tracking_token' => Str::random(64),
+                    'created_at' => now(),
+                    'updated_at' => now(),
                 ];
             } else {
                 $invalidEmails[] = $email;
@@ -162,7 +164,7 @@ class FileUploadService
     {
         $emails = [];
         $handle = fopen($file->getPathname(), 'r');
-        
+
         if ($handle === false) {
             throw new \Exception('Unable to open CSV file');
         }

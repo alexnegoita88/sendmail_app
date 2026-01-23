@@ -13,11 +13,6 @@ use Illuminate\Support\Facades\Mail;
 
 class Campaigns extends Component
 {
-    public $name;
-    public $emailTemplateId;
-    public $emailListId;
-    public $status = 'pending';
-
     // Progress tracking properties
     public $runningCampaignId = null;
     public $progressPercentage = 0;
@@ -25,60 +20,23 @@ class Campaigns extends Component
     public $emailsProcessed = 0;
     public $totalEmails = 0;
 
-    protected $rules = [
-        'name' => 'required|string|max:255',
-        'emailTemplateId' => 'required|exists:email_templates,id',
-        'emailListId' => 'required|exists:email_lists,id',
-    ];
-
     public function render()
     {
-        $campaigns = Campaign::where('user_id', auth()->id())
+        $campaigns = Campaign::where('user_id', '=', auth()->id())
             ->with(['emailTemplate', 'emailList'])
             ->latest()
             ->paginate(10);
 
-        $templates = EmailTemplate::where('user_id', auth()->id())->get();
-        $emailLists = EmailList::where('user_id', auth()->id())
-            ->where('status', 'completed')
-            ->get();
-
         return view('livewire.campaigns', [
             'campaigns' => $campaigns,
-            'templates' => $templates,
-            'emailLists' => $emailLists
-        ]);
+        ])->layout('layouts.app');
     }
 
-    public function createCampaign()
-    {
-        $this->validate();
-
-        // Check if email list has valid emails
-        $emailList = EmailList::find($this->emailListId);
-        if ($emailList->valid_emails === 0) {
-            session()->flash('error', 'Lista de emailuri nu conține adrese valide!');
-            return;
-        }
-
-        $campaign = Campaign::create([
-            'name' => $this->name,
-            'email_template_id' => $this->emailTemplateId,
-            'email_list_id' => $this->emailListId,
-            'status' => 'pending',
-            'user_id' => auth()->id(),
-        ]);
-
-        session()->flash('message', 'Campanie creată cu succes!');
-
-        // Reset form
-        $this->reset(['name', 'emailTemplateId', 'emailListId']);
-    }
 
     public function startCampaign($campaignId)
     {
-        $campaign = Campaign::where('id', $campaignId)
-            ->where('user_id', auth()->id())
+        $campaign = Campaign::where('id', '=', $campaignId)
+            ->where('user_id', '=', auth()->id())
             ->first();
 
         if (!$campaign || $campaign->status !== 'pending') {
@@ -123,7 +81,7 @@ class Campaigns extends Component
         ]);
 
         // Now get the recipients that are associated with this campaign
-        $recipients = $campaign->emailRecipients()->where('status', 'pending')->get();
+        $recipients = $campaign->emailRecipients()->where('status', '=', 'pending')->get();
 
         // Send emails synchronously with progress updates
         $emailsSent = 0;
@@ -207,8 +165,8 @@ class Campaigns extends Component
         // Send the email synchronously
         Mail::html($content, function ($message) use ($recipient, $subject) {
             $message->to($recipient->email, $recipient->name)
-                   ->subject($subject)
-                   ->from(config('mail.from.address'), config('mail.from.name'));
+                ->subject($subject)
+                ->from(config('mail.from.address'), config('mail.from.name'));
         });
 
         // Update recipient status
@@ -238,8 +196,8 @@ class Campaigns extends Component
 
     public function pauseCampaign($campaignId)
     {
-        $campaign = Campaign::where('id', $campaignId)
-            ->where('user_id', auth()->id())
+        $campaign = Campaign::where('id', '=', $campaignId)
+            ->where('user_id', '=', auth()->id())
             ->first();
 
         if ($campaign && $campaign->status === 'running') {
@@ -250,8 +208,8 @@ class Campaigns extends Component
 
     public function deleteCampaign($campaignId)
     {
-        $campaign = Campaign::where('id', $campaignId)
-            ->where('user_id', auth()->id())
+        $campaign = Campaign::where('id', '=', $campaignId)
+            ->where('user_id', '=', auth()->id())
             ->first();
 
         if ($campaign) {
@@ -265,12 +223,18 @@ class Campaigns extends Component
     public function getStatusColor($status)
     {
         switch ($status) {
-            case 'pending': return 'bg-gray-100 text-gray-800';
-            case 'running': return 'bg-green-100 text-green-800';
-            case 'completed': return 'bg-blue-100 text-blue-800';
-            case 'failed': return 'bg-red-100 text-red-800';
-            case 'paused': return 'bg-yellow-100 text-yellow-800';
-            default: return 'bg-gray-100 text-gray-800';
+            case 'pending':
+                return 'bg-gray-100 text-gray-800';
+            case 'running':
+                return 'bg-green-100 text-green-800';
+            case 'completed':
+                return 'bg-blue-100 text-blue-800';
+            case 'failed':
+                return 'bg-red-100 text-red-800';
+            case 'paused':
+                return 'bg-yellow-100 text-yellow-800';
+            default:
+                return 'bg-gray-100 text-gray-800';
         }
     }
 }
