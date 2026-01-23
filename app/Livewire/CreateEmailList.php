@@ -21,7 +21,7 @@ class CreateEmailList extends Component
         $list = EmailList::create([
             'name' => $this->name,
             'user_id' => auth()->id(),
-            'status' => 'pending', // Manual lists are ready immediately
+            'status' => 'completed', // Manual lists are ready immediately
             'file_type' => 'manual',
             'total_emails' => 0,
             'valid_emails' => 0,

@@ -18,7 +18,7 @@
                             &larr; Înapoi la Șabloane
                         </a>
                     </div>
-                    <form action="{{ route('email-templates.store') }}" method="POST">
+                    <form action="{{ route('email-templates.store') }}" method="POST" enctype="multipart/form-data">
                         @csrf
 
                         @if ($errors->any())
@@ -46,6 +46,15 @@
                                     class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                                     placeholder="Ex: Oferta Specială pentru Abonați" required>
                             </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="attachment" class="block text-sm font-medium text-gray-700">Atașament
+                                (Opțional)</label>
+                            <input type="file" name="attachment" id="attachment"
+                                class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                            <p class="mt-1 text-xs text-gray-500">Puteți atașa un fișier (PDF, imagine, doc, etc.) care
+                                va fi trimis împreună cu email-ul.</p>
                         </div>
 
                         <div class="mb-4">
