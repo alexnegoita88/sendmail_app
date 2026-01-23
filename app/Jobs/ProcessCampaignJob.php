@@ -75,8 +75,9 @@ class ProcessCampaignJob implements ShouldQueue
         foreach ($results as $result) {
             Log::info("ProcessCampaignJob: Processing result ID {$result->id} for campaign {$campaign->name}");
 
-            // Check rate limiting (50 emails per minute)
-            if (!$this->checkRateLimit()) {
+            // Check rate limiting
+            $limit = config('app.email_rate_limit', env('EMAIL_RATE_LIMIT', 50));
+            if (!$this->checkRateLimit($limit)) {
                 Log::warning("ProcessCampaignJob: Rate limit exceeded for campaign {$campaign->name}, releasing job back to queue");
                 // Rate limit exceeded, delay the job
                 $this->release(60); // Release back to queue after 60 seconds
@@ -91,10 +92,10 @@ class ProcessCampaignJob implements ShouldQueue
 
             Log::info("ProcessCampaignJob: Dispatched {$emailsSent} email jobs so far for campaign {$campaign->name}");
 
-            // Rate limiting: wait 1.2 seconds between emails (50 per minute = 1.2 seconds per email)
-            if ($emailsSent % 50 === 0) {
-                // After every 50 emails, wait for the minute to reset
-                Log::info("ProcessCampaignJob: Waiting 1 second after 50 emails for campaign {$campaign->name}");
+            // Rate limiting: wait between emails
+            if ($emailsSent % $limit === 0) {
+                // After every batch, wait for the minute to reset
+                Log::info("ProcessCampaignJob: Waiting 1 second after batch of {$limit} emails for campaign {$campaign->name}");
                 sleep(1);
             } else {
                 // Small delay between emails
@@ -115,7 +116,7 @@ class ProcessCampaignJob implements ShouldQueue
     /**
      * Check if we can send more emails based on rate limiting
      */
-    protected function checkRateLimit(): bool
+    protected function checkRateLimit(int $limit): bool
     {
         $now = now();
         $minuteStart = $now->copy()->startOfMinute();
@@ -138,7 +139,7 @@ class ProcessCampaignJob implements ShouldQueue
         }
 
         // Check if we've reached the limit
-        if ($rateLimit->count >= 50) {
+        if ($rateLimit->count >= $limit) {
             return false;
         }
 

@@ -8,6 +8,7 @@ use App\Models\EmailTemplate;
 use App\Models\Campaign;
 use App\Models\CampaignResult;
 use App\Models\EmailRecipient;
+use App\Models\RateLimitLog;
 
 class Dashboard extends Component
 {
@@ -35,10 +36,16 @@ class Dashboard extends Component
 
     protected function getSystemStatus()
     {
+        $limit = env('EMAIL_RATE_LIMIT', 50);
+        $currentUsage = RateLimitLog::query()
+            ->where('type', '=', 'email_sending')
+            ->where('created_at', '>=', now()->startOfMinute())
+            ->value('count') ?? 0;
+
         return [
             'smtp_connected' => $this->checkSmtpConnection(),
             'database_connected' => $this->checkDatabaseConnection(),
-            'rate_limit' => '50/min', // This could be made dynamic if needed
+            'rate_limit' => "{$currentUsage} / {$limit} per min",
         ];
     }
 
