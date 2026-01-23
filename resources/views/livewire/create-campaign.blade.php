@@ -11,8 +11,8 @@
                 <div class="p-6">
                     <div class="flex justify-between items-center mb-6">
                         <h3 class="text-lg font-semibold text-gray-900">Detalii Campanie</h3>
-                        <a href="{{ route('campaigns.index') }}"
-                            class="text-indigo-600 hover:text-indigo-900 text-sm font-medium">
+                        <a href="{{ route('campaigns') }}"
+                            class="text-indigo-600 hover:text-indigo-900 text-sm font-medium" wire:navigate>
                             &larr; Înapoi la Campanii
                         </a>
                     </div>
@@ -24,12 +24,26 @@
                     @endif
 
                     <form wire:submit.prevent="createCampaign" class="space-y-6">
-                        <div>
-                            <label for="name" class="block text-sm font-medium text-gray-700">Nume Campanie</label>
-                            <input type="text" wire:model="name"
-                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                                placeholder="Ex: Campanie Newsletter Ianuarie">
-                            @error('name') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label for="name" class="block text-sm font-medium text-gray-700">Nume Campanie</label>
+                                <input type="text" wire:model="name"
+                                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                    placeholder="Ex: Campanie Newsletter Ianuarie">
+                                @error('name') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
+                            </div>
+
+                            <div>
+                                <label for="scheduled_at" class="block text-sm font-medium text-gray-700">Data și ora
+                                    lansării (opțional)</label>
+                                <input type="datetime-local" wire:model="scheduled_at"
+                                    min="{{ now()->format('Y-m-d\TH:i') }}"
+                                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                                <p class="mt-1 text-xs text-slate-500">Lăsați gol pentru a trimite imediat ce porniți
+                                    campania.</p>
+                                @error('scheduled_at') <span class="text-red-600 text-sm">{{ $message }}</span>
+                                @enderror
+                            </div>
                         </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">

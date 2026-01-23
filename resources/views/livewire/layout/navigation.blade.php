@@ -40,8 +40,7 @@ new class extends Component {
                         wire:navigate>
                         {{ __('Șabloane') }}
                     </x-nav-link>
-                    <x-nav-link :href="route('campaigns.index')" :active="request()->routeIs('campaigns.*')"
-                        wire:navigate>
+                    <x-nav-link :href="route('campaigns')" :active="request()->routeIs('campaigns.*') || request()->routeIs('campaigns')" wire:navigate>
                         {{ __('Campanii') }}
                     </x-nav-link>
                 </div>
@@ -112,8 +111,7 @@ new class extends Component {
                 :active="request()->routeIs('email-templates.*')" wire:navigate>
                 {{ __('Șabloane') }}
             </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('campaigns.index')" :active="request()->routeIs('campaigns.*')"
-                wire:navigate>
+            <x-responsive-nav-link :href="route('campaigns')" :active="request()->routeIs('campaigns.*') || request()->routeIs('campaigns')" wire:navigate>
                 {{ __('Campanii') }}
             </x-responsive-nav-link>
         </div>

@@ -30,8 +30,15 @@ class Campaigns extends Component
             ->latest()
             ->paginate(10);
 
+        // Check if any campaign is running or scheduled to trigger UI polling
+        $anyRunning = Campaign::query()
+            ->where('user_id', '=', (int) auth()->id())
+            ->whereIn('status', ['running', 'scheduled'])
+            ->exists();
+
         return view('livewire.campaigns', [
             'campaigns' => $campaigns,
+            'anyRunning' => $anyRunning,
         ]);
     }
 
@@ -43,39 +50,20 @@ class Campaigns extends Component
             ->where('user_id', '=', (int) auth()->id())
             ->first();
 
-        if (!$campaign || $campaign->status !== 'pending') {
+        if (!$campaign || ($campaign->status !== 'pending' && $campaign->status !== 'failed')) {
             session()->flash('error', 'Campania nu poate fi pornită!');
             return;
         }
 
-        // Initialize progress tracking
-        $this->runningCampaignId = $campaignId;
-        $this->progressPercentage = 0;
-        $this->progressMessage = 'Inițializare campanie...';
-        $this->emailsProcessed = 0;
+        $now = now();
+        $isScheduled = $campaign->scheduled_at && $campaign->scheduled_at->isAfter($now);
 
-        // Force Livewire to re-render and show progress bar
-        $this->dispatch('campaign-progress-started');
-
-        // Update campaign status to running
+        // Update campaign status
         $campaign->update([
-            'status' => 'running',
-            'started_at' => now()
+            'status' => $isScheduled ? 'scheduled' : 'running',
+            'started_at' => $isScheduled ? null : $now,
+            'error_message' => null
         ]);
-
-        // Get all recipients from the email list and associate them with this campaign
-        $allRecipients = $campaign->emailList->emailRecipients()->get();
-        $this->totalEmails = $allRecipients->count();
-
-        if ($allRecipients->isEmpty()) {
-            $campaign->update([
-                'status' => 'completed',
-                'completed_at' => now()
-            ]);
-            $this->resetProgress();
-            session()->flash('message', 'Campania a fost finalizată - lista de emailuri este goală!');
-            return;
-        }
 
         // Associate all recipients with this campaign and reset their status to pending
         $campaign->emailList->emailRecipients()->update([
@@ -84,55 +72,14 @@ class Campaigns extends Component
             'sent_at' => null
         ]);
 
-        // Now get the recipients that are associated with this campaign
-        $recipients = $campaign->emailRecipients()->where('status', '=', 'pending')->get();
-
-        // Send emails synchronously with progress updates
-        $emailsSent = 0;
-        $emailsFailed = 0;
-
-        foreach ($recipients as $index => $recipient) {
-            try {
-                // Update progress before sending
-                $this->emailsProcessed = $index;
-                $this->progressPercentage = intval((($index) / $this->totalEmails) * 100);
-                $this->progressMessage = "Trimitere email către {$recipient->email}...";
-
-                // Send email directly using SendEmailJob logic
-                $this->sendEmailToRecipient($recipient, $campaign);
-                $emailsSent++;
-
-                // Update progress after successful send
-                $this->emailsProcessed = $index + 1;
-                $this->progressPercentage = intval((($index + 1) / $this->totalEmails) * 100);
-                $this->progressMessage = "Email trimis către {$recipient->email} ✅";
-
-                // Small delay between emails to avoid rate limiting issues
-                usleep(100000); // 0.1 seconds
-
-            } catch (\Exception $e) {
-                $emailsFailed++;
-                $this->progressMessage = "Eroare la {$recipient->email} ❌";
-                Log::error("Failed to send email to {$recipient->email}: " . $e->getMessage());
-            }
+        // Dispatch background job
+        if ($isScheduled) {
+            \App\Jobs\ProcessCampaignJob::dispatch($campaign->id)->delay($campaign->scheduled_at);
+            session()->flash('message', 'Campania a fost programată pentru ' . $campaign->scheduled_at->format('d.m.Y H:i') . '!');
+        } else {
+            \App\Jobs\ProcessCampaignJob::dispatch($campaign->id);
+            session()->flash('message', 'Campania a fost adăugată în coada de procesare!');
         }
-
-        // Final progress update
-        $this->progressPercentage = 100;
-        $this->progressMessage = 'Finalizare campanie...';
-
-        // Update campaign final status
-        $campaign->update([
-            'status' => 'completed',
-            'completed_at' => now(),
-            'emails_sent' => $emailsSent,
-            'emails_failed' => $emailsFailed
-        ]);
-
-        // Reset progress after a short delay
-        $this->resetProgress();
-
-        session()->flash('message', "Campanie finalizată! Trimise: {$emailsSent}, Eșuate: {$emailsFailed}");
     }
 
     protected function resetProgress()
@@ -242,6 +189,8 @@ class Campaigns extends Component
                 return 'bg-gray-100 text-gray-800';
             case 'running':
                 return 'bg-green-100 text-green-800';
+            case 'scheduled':
+                return 'bg-purple-100 text-purple-800';
             case 'completed':
                 return 'bg-blue-100 text-blue-800';
             case 'failed':
