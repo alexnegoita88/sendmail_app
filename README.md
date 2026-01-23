@@ -73,6 +73,11 @@ ea-php82 artisan horizon:terminate
 ```
 *Dacă ai Supervisor configurat corect, acesta va reporni procesul instantaneu.*
 
+**NOTĂ:** Dacă Supervisor-ul nu este pornit, acesta trebuie pornit manual cu:
+```bash
+/usr/bin/supervisord -c user_supervisor.conf
+```
+
 ---
 
 ## ⚙️ Configurare Supervisor (Instanță Privată)
