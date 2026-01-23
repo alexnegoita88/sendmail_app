@@ -1,5 +1,6 @@
 # 📧 SendMail App - Platforma Profesionistă de Email Marketing
 
+
 **Bun venit!** 👋
 
 Aceasta este o aplicație web completă pentru trimiterea de emailuri în masă, construită cu **Laravel 12** și **Livewire**. Dacă nu știi nimic despre programare sau email marketing, nu-ți face griji! Acest ghid te va ghida pas cu pas.
