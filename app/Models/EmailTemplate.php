@@ -16,6 +16,8 @@ class EmailTemplate extends Model
         'subject',
         'content',
         'is_html',
+        'attachment_path',
+        'attachment_name',
         'placeholders',
         'user_id',
     ];

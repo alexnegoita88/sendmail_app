@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\EmailTemplate;
+use Illuminate\Support\Facades\Storage;
 
 class EmailTemplateController extends Controller
 {
@@ -34,11 +35,22 @@ class EmailTemplateController extends Controller
 
         ]);
 
+        $attachmentPath = null;
+        $attachmentName = null;
+
+        if ($request->hasFile('attachment')) {
+            $file = $request->file('attachment');
+            $attachmentName = $file->getClientOriginalName();
+            $attachmentPath = $file->store('attachments', 'local');
+        }
+
         EmailTemplate::create([
             'name' => $request->input('name'),
             'subject' => $request->input('subject'),
             'content' => $request->input('content'),
             'is_html' => $request->is_html ?? true,
+            'attachment_path' => $attachmentPath,
+            'attachment_name' => $attachmentName,
             'user_id' => auth()->id(),
         ]);
 
@@ -72,12 +84,31 @@ class EmailTemplateController extends Controller
             ->where('user_id', '=', (int) auth()->id())
             ->firstOrFail();
 
-        $template->update([
+        $data = [
             'name' => $request->input('name'),
             'subject' => $request->input('subject'),
             'content' => $request->input('content'),
             'is_html' => $request->input('is_html') ?? true,
-        ]);
+        ];
+
+        if ($request->hasFile('attachment')) {
+            // Delete old attachment if exists
+            if ($template->attachment_path) {
+                Storage::disk('local')->delete($template->attachment_path);
+            }
+
+            $file = $request->file('attachment');
+            $data['attachment_name'] = $file->getClientOriginalName();
+            $data['attachment_path'] = $file->store('attachments', 'local');
+        } elseif ($request->boolean('remove_attachment')) {
+            if ($template->attachment_path) {
+                Storage::disk('local')->delete($template->attachment_path);
+            }
+            $data['attachment_name'] = null;
+            $data['attachment_path'] = null;
+        }
+
+        $template->update($data);
 
         return redirect()->route('email-templates.index')
             ->with('message', 'Șablon actualizat cu succes!');
@@ -91,6 +122,9 @@ class EmailTemplateController extends Controller
             ->first();
 
         if ($template) {
+            if ($template->attachment_path) {
+                Storage::disk('local')->delete($template->attachment_path);
+            }
             EmailTemplate::destroy($template->id);
         }
 

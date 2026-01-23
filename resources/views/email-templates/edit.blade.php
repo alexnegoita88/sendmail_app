@@ -18,7 +18,8 @@
                             &larr; Înapoi la Șabloane
                         </a>
                     </div>
-                    <form action="{{ route('email-templates.update', $template->id) }}" method="POST">
+                    <form action="{{ route('email-templates.update', $template->id) }}" method="POST"
+                        enctype="multipart/form-data">
                         @csrf
                         @method('PUT')
 
@@ -48,6 +49,38 @@
                                     class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                                     placeholder="Ex: Oferta Specială pentru Abonați" required>
                             </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="attachment" class="block text-sm font-medium text-gray-700">Atașament
+                                (Opțional)</label>
+
+                            @if($template->attachment_path)
+                                <div
+                                    class="mt-2 mb-3 p-3 bg-gray-50 rounded-md border border-gray-200 flex items-center justify-between">
+                                    <div class="flex items-center">
+                                        <svg class="w-5 h-5 text-gray-400 mr-2" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                                        </svg>
+                                        <span
+                                            class="text-sm text-gray-700 font-medium">{{ $template->attachment_name }}</span>
+                                    </div>
+                                    <label
+                                        class="inline-flex items-center text-xs text-red-600 cursor-pointer hover:text-red-800">
+                                        <input type="checkbox" name="remove_attachment" value="1"
+                                            class="rounded border-gray-300 text-red-600 shadow-sm focus:border-red-300 focus:ring focus:ring-red-200 focus:ring-opacity-50 mr-1">
+                                        Șterge atașamentul
+                                    </label>
+                                </div>
+                            @endif
+
+                            <input type="file" name="attachment" id="attachment"
+                                class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                            <p class="mt-1 text-xs text-gray-500">
+                                {{ $template->attachment_path ? 'Încărcați un fișier nou pentru a-l înlocui pe cel actual.' : 'Puteți atașa un fișier care va fi trimis împreună cu email-ul.' }}
+                            </p>
                         </div>
 
                         <div class="mb-4">

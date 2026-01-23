@@ -32,16 +32,16 @@ class SendEmailJob implements ShouldQueue
     public function handle(): void
     {
         Log::info("SendEmailJob: Starting job for recipient ID: {$this->emailRecipientId}");
-        
-        $recipient = EmailRecipient::find($this->emailRecipientId);
-        
+
+        $recipient = EmailRecipient::find($this->emailRecipientId, ['*']);
+
         if (!$recipient) {
             Log::error("SendEmailJob: Recipient not found with ID: {$this->emailRecipientId}");
             return;
         }
-        
+
         Log::info("SendEmailJob: Found recipient {$recipient->email} with status: {$recipient->status}");
-        
+
         if ($recipient->status === 'sent') {
             Log::warning("SendEmailJob: Email already sent to {$recipient->email}");
             return;
@@ -72,10 +72,16 @@ class SendEmailJob implements ShouldQueue
             Log::info("SendEmailJob: Content length: " . strlen($content));
             Log::info("SendEmailJob: Subject: {$subject}");
 
-            $result = Mail::html($content, function ($message) use ($recipient, $subject) {
+            $result = Mail::html($content, function ($message) use ($recipient, $subject, $template) {
                 $message->to($recipient->email, $recipient->name)
-                       ->subject($subject)
-                       ->from(config('mail.from.address'), config('mail.from.name'));
+                    ->subject($subject)
+                    ->from(config('mail.from.address'), config('mail.from.name'));
+
+                if ($template->attachment_path) {
+                    $message->attach(storage_path('app/' . $template->attachment_path), [
+                        'as' => $template->attachment_name,
+                    ]);
+                }
             });
 
             Log::info("SendEmailJob: Mail::html() returned: " . ($result ? 'true' : 'false'));
@@ -97,7 +103,7 @@ class SendEmailJob implements ShouldQueue
         } catch (\Exception $e) {
             Log::error("SendEmailJob: Exception occurred while sending email to {$recipient->email}: " . $e->getMessage());
             Log::error("SendEmailJob: Exception trace: " . $e->getTraceAsString());
-            
+
             // Update recipient status to failed
             $recipient->update([
                 'status' => 'failed',
