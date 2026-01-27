@@ -70,37 +70,43 @@ function initTinyMCEEditor() {
         content_css: false,
 
         // Handler pentru upload-ul de imagini la server
-        images_upload_handler: function (blobInfo, success, failure) {
-            const maxSize = 2048 * 1024; // 2 MB
-            const file = blobInfo.blob();
+        images_upload_handler: function (blobInfo, progress) {
+            return new Promise((resolve, reject) => {
+                const maxSize = 2048 * 1024; // 2 MB
+                const file = blobInfo.blob();
 
-            if (file.size > maxSize) {
-                failure('Imaginea este prea mare (max 2MB)');
-                return;
-            }
+                if (file.size > maxSize) {
+                    reject('Imaginea este prea mare (max 2MB)');
+                    return;
+                }
 
-            const formData = new FormData();
-            formData.append('file', file);
+                const formData = new FormData();
+                formData.append('file', file);
 
-            // RETURN fetch pentru TinyMCE
-            return fetch('/upload-image', {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                },
-                body: formData
-            })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.url) {
-                        return { url: data.url }; // returnăm obiectul așteptat de TinyMCE
-                    } else {
-                        throw new Error(data.error || 'Upload failed');
-                    }
+                fetch('/upload-image', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: formData
                 })
-                .catch(err => {
-                    failure(err.message);
-                });
+                    .then(response => {
+                        if (!response.ok) {
+                            return response.json().then(err => { throw new Error(err.message || 'Server error'); });
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.url) {
+                            resolve(data.url);
+                        } else {
+                            reject(data.error || 'Upload failed');
+                        }
+                    })
+                    .catch(err => {
+                        reject(err.message);
+                    });
+            });
         },
 
         // 🔴 CRITICAL: Force separate URLs for emails
