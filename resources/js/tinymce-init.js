@@ -68,14 +68,14 @@ function initTinyMCEEditor() {
         // 🔴 OBLIGATORIU CÂND imporți CSS manual
         skin: false,
         content_css: false,
-        
+
         // Handler pentru upload-ul de imagini la server
         images_upload_handler: function (blobInfo, success, failure) {
-            const maxSize = 500 * 1024; // 500 KB
+            const maxSize = 2048 * 1024; // 2 MB
             const file = blobInfo.blob();
 
             if (file.size > maxSize) {
-                failure('Imaginea este prea mare (max 512KB)');
+                failure('Imaginea este prea mare (max 2MB)');
                 return;
             }
 
@@ -90,17 +90,17 @@ function initTinyMCEEditor() {
                 },
                 body: formData
             })
-            .then(response => response.json())
-            .then(data => {
-                if (data.url) {
-                    return { url: data.url }; // returnăm obiectul așteptat de TinyMCE
-                } else {
-                    throw new Error(data.error || 'Upload failed');
-                }
-            })
-            .catch(err => {
-                failure(err.message);
-            });
+                .then(response => response.json())
+                .then(data => {
+                    if (data.url) {
+                        return { url: data.url }; // returnăm obiectul așteptat de TinyMCE
+                    } else {
+                        throw new Error(data.error || 'Upload failed');
+                    }
+                })
+                .catch(err => {
+                    failure(err.message);
+                });
         },
 
         // 🔴 CRITICAL: Force separate URLs for emails
@@ -153,7 +153,7 @@ window.switchEditor = function (type) {
 };
 
 // Inițializăm editorul la încărcarea paginii
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     const isHtmlInput = document.getElementById('is_html');
     if (isHtmlInput) {
         const isHtml = isHtmlInput.value === '1';

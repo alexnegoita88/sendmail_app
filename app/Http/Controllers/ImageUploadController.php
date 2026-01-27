@@ -11,7 +11,7 @@ class ImageUploadController extends Controller
     {
         // Validare: fișier obligatoriu, imagine, max 512 KB
         $request->validate([
-            'file' => 'required|image|max:512', // KB
+            'file' => 'required|image|max:2048', // KB
         ]);
 
         $file = $request->file('file');
