@@ -20,12 +20,21 @@ class CampaignStats extends Component
     public function mount($id)
     {
         $this->campaignId = $id;
+
+        // Verificăm dacă campania aparține utilizatorului curent
+        Campaign::query()
+            ->where('id', '=', (int) $this->campaignId)
+            ->where('user_id', '=', (int) auth()->id())
+            ->firstOrFail();
     }
 
     #[Layout('layouts.app')]
     public function render()
     {
-        $campaign = Campaign::with(['emailTemplate', 'emailList'])->findOrFail($this->campaignId);
+        $campaign = Campaign::with(['emailTemplate', 'emailList'])
+            ->where('id', '=', (int) $this->campaignId)
+            ->where('user_id', '=', (int) auth()->id())
+            ->firstOrFail();
 
         $resultsQuery = CampaignResult::query()
             ->with('emailRecipient')
