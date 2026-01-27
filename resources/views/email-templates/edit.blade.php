@@ -53,7 +53,7 @@
 
                         <div class="mb-4">
                             <label for="attachment" class="block text-sm font-medium text-gray-700">Atașament
-                                (Opțional)</label>
+                                (Maxim un singur fișier)</label>
 
                             @if($template->attachment_path)
                                 <div
@@ -79,7 +79,7 @@
                             <input type="file" name="attachment" id="attachment"
                                 class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
                             <p class="mt-1 text-xs text-gray-500">
-                                {{ $template->attachment_path ? 'Încărcați un fișier nou pentru a-l înlocui pe cel actual.' : 'Puteți atașa un fișier care va fi trimis împreună cu email-ul.' }}
+                                {{ $template->attachment_path ? 'Încărcați un fișier nou pentru a-l înlocui pe cel actual (Max: 2MB).' : 'Puteți atașa maxim un singur fișier care va fi trimis împreună cu email-ul (Max: 2MB).' }}
                             </p>
                         </div>
 

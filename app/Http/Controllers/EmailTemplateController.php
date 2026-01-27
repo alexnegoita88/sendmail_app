@@ -31,8 +31,8 @@ class EmailTemplateController extends Controller
             'name' => 'required|string|max:255',
             'subject' => 'required|string|max:255',
             'content' => 'required|string',
-            'is_html' => 'boolean'
-
+            'is_html' => 'boolean',
+            'attachment' => 'nullable|file|max:2048'
         ]);
 
         $attachmentPath = null;
@@ -76,7 +76,8 @@ class EmailTemplateController extends Controller
             'name' => 'required|string|max:255',
             'subject' => 'required|string|max:255',
             'content' => 'required|string',
-            'is_html' => 'boolean'
+            'is_html' => 'boolean',
+            'attachment' => 'nullable|file|max:2048'
         ]);
 
         $template = EmailTemplate::query()
