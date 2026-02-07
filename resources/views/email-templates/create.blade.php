@@ -50,11 +50,12 @@
 
                         <div class="mb-4">
                             <label for="attachment" class="block text-sm font-medium text-gray-700">Atașament
-                                (Opțional)</label>
+                                (Maxim un singur fișier)</label>
                             <input type="file" name="attachment" id="attachment"
                                 class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
-                            <p class="mt-1 text-xs text-gray-500">Puteți atașa un fișier (PDF, imagine, doc, etc.) care
-                                va fi trimis împreună cu email-ul.</p>
+                            <p class="mt-1 text-xs text-gray-500">Puteți atașa maxim un singur fișier (PDF, imagine,
+                                doc, etc.) care
+                                va fi trimis împreună cu email-ul (Max: 2MB).</p>
                         </div>
 
                         <div class="mb-4">
