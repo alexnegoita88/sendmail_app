@@ -17,14 +17,14 @@ class UserSeeder extends Seeder
         // Create first user
         User::create([
             'name' => 'Admin User',
-            'email' => 'admin@radacini-grup.ro',
+            'email' => 'admin@example.ro',
             'password' => Hash::make('admin123'),
         ]);
 
         // Create second user
         User::create([
             'name' => 'Manager User',
-            'email' => 'manager@radacini-grup.ro',
+            'email' => 'manager@example.ro',
             'password' => Hash::make('manager123'),
         ]);
     }
