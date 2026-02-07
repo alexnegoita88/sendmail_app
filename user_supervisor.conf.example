@@ -1,0 +1,40 @@
+# Supervisor Configuration Template for MailFlow
+
+# This is a TEMPLATE file. Copy it to create your actual configuration:
+# cp user_supervisor.conf.example user_supervisor.conf
+# Then edit user_supervisor.conf with your specific settings.
+
+# The actual user_supervisor.conf is ignored by Git (see .gitignore)
+
+[supervisord]
+logfile=%(here)s/storage/logs/supervisord.log
+pidfile=%(here)s/storage/supervisord.pid
+nodaemon=false
+
+[program:horizon]
+# For standard PHP installations, use:
+command=php %(here)s/artisan horizon
+
+# For cPanel with ea-php82, use:
+# command=ea-php82 %(here)s/artisan horizon
+
+# For other PHP versions, adjust accordingly:
+# command=/usr/bin/php8.2 %(here)s/artisan horizon
+
+autostart=true
+autorestart=true
+
+# IMPORTANT: Replace 'your_username' with your actual server username
+# To find your username, run: whoami
+user=your_username
+
+numprocs=1
+redirect_stderr=true
+stdout_logfile=%(here)s/storage/logs/horizon.log
+stopwaitsecs=3600
+
+# Configuration Notes:
+# - %(here)s automatically resolves to the directory containing this config file
+# - Adjust the 'command' line based on your PHP installation
+# - Set 'user' to your actual server username
+# - Logs will be written to storage/logs/
